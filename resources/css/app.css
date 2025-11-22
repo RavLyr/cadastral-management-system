@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Reset default vue3-select styles === */
+.vs__dropdown-toggle {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.vs__dropdown-toggle:focus {
+  box-shadow: none !important;
+}
+
+
+
+
+/* .v-select {
+  width: 100%;
+} */
+
+/* Optional: hilangkan spacing bawaan */
+/* .vs__selected-options {
+  padding-left: 0 !important;
+} */
