@@ -3,11 +3,12 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import Table from '@/Components/Table.vue';
 import Modal from '@/Components/Modal.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import SearchBar from '@/Components/SearchBar.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { Trash } from 'lucide-vue-next';
+import { UploadCloudIcon } from 'lucide-vue-next';
+import { Sheet } from 'lucide-vue-next';
 
 const props = defineProps({
     importedData: {
@@ -128,6 +129,7 @@ const clearData = () => {
 const openDetail = (row) => {
     selectedRow.value = row;
     showDetailModal.value = true;
+
 };
 
 const closeDetailModal = () => {
@@ -174,7 +176,7 @@ const headers = [
     { key: 'subjek_pajak_nama_wajib_pajak', label: 'Nama Wajib Pajak' },
     { key: 'bumi', label: 'Bumi' },
     { key: 'bng', label: 'Bangunan' },
-    { key: 'aksi', label: 'Aksi', class:'text-center px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' },
+    { key: 'aksi', label: 'Aksi', class: 'text-center px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' },
 ];
 
 // Preview hanya 5 baris pertama
@@ -210,6 +212,8 @@ const detailRows = computed(() => {
         { field: 'Kabupaten/Kota WP', value: selectedRow.value.subjek_pajak_kabupaten_kota || '-' },
         { field: 'Jenis Bumi', value: selectedRow.value.jns_bumi || '-' },
         { field: 'Usulan Pembetulan', value: selectedRow.value.usulan_pembetulan || '-' },
+        { field: 'Blok', value: selectedRow.value.blok || '-' },
+        { field: 'Nomor Urut', value: selectedRow.value.no_urut || '-' },
     ];
 });
 </script>
@@ -280,17 +284,19 @@ const detailRows = computed(() => {
                         </div>
                     </div>
                     <div class="flex justify-end gap-3">
-                        <button v-if="existingData.length > 0" type="button" @click="clearData"
+                        <button v-if="existingDataWithNo.length > 0" type="button" @click="clearData"
                             class="px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
                             Hapus Semua Data
                         </button>
+                        <a class="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            href="/storage/Template%20DHR%20DESA%20TEMUREJO.xlsx" download>
+                            <Sheet size="20" />
+                            Download Template Excel
+                        </a>
+
                         <button type="submit" :disabled="uploading || !form.file"
                             class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
-                                </path>
-                            </svg>
+                            <UploadCloudIcon size="20" />
                             {{ uploading ? 'Mengupload...' : 'Upload & Preview' }}
                         </button>
                     </div>
@@ -299,11 +305,12 @@ const detailRows = computed(() => {
 
             <!-- Search -->
             <div v-if="!isPreviewMode" class="mb-6">
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <SearchBar v-model="search" :placeholder="'Cari berdasarkan NOP atau Nama Wajib Pajak...'" @search="onSearch" />
-                        </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <SearchBar v-model="search" :placeholder="'Cari berdasarkan NOP atau Nama Wajib Pajak...'"
+                            @search="onSearch" />
                     </div>
+                </div>
             </div>
 
             <!-- Existing Data Table -->
@@ -341,13 +348,18 @@ const detailRows = computed(() => {
                     </template>
                     <template #cell-aksi="{ row }">
                         <div class="flex gap-2 font-bold">
-                            <button @click="openDetail(row)"
+                            <!-- <button @click="openDetail(row)"
                                 class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
                                 Lihat Detail
+                            </button> -->
+                            <button @click="router.get(`/sismiop/${row.id}/edit`)"
+                                class="px-3 py-1 bg-yellow-500 text-white rounded">
+                                Edit
                             </button>
                             <button @click="openDeleteModal(row.id)"
                                 class="px-3 py-1 flex justify-center items-center gap-1 flex-row text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">
-                                <Trash size="15" /> <span>Hapus</span>
+                                <!-- <Trash size="15" /> -->
+                                <span>Hapus</span>
                             </button>
                         </div>
                     </template>

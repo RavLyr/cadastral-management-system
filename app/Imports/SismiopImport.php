@@ -4,9 +4,10 @@ namespace App\Imports;
 
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithStartRow;
+use App\Models\SismiopData; // Import model
 
-class SismiopImport implements ToCollection, WithHeadingRow
+class SismiopImport implements ToCollection, WithStartRow
 {
     /**
      * Flag to stop reading once the footer section is reached.
@@ -18,21 +19,20 @@ class SismiopImport implements ToCollection, WithHeadingRow
      */
     public array $data = [];
 
-    public function headingRow(): int
+    /**
+     * Specify the starting row for the import.
+     */
+    public function startRow(): int
     {
-        return 6; // sheet has multiple header rows, actual headings sit on row 6
+        return 7; // Mulai dari baris ke-7
     }
 
     public function collection(Collection $rows): void
     {
         foreach ($rows as $row) {
-            if (!$row instanceof Collection) {
-                $row = collect($row);
-            }
+            $row = $this->normalizeRow($row);
 
-            $normalizedRow = $this->normalizeRow($row);
-
-            if ($this->rowContainsFooterSection($normalizedRow)) {
+            if ($this->rowContainsFooterSection($row)) {
                 $this->skipRows = true;
                 continue;
             }
@@ -41,27 +41,29 @@ class SismiopImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $nop = $this->extractValue($row, $normalizedRow, ['nop', 'nomor_objek_pajak'], 1);
-            if ($nop === '') {
-                continue;
+            $nop = $this->extractValue($row, 1);
+            if ($nop === '' || SismiopData::where('nop', $nop)->exists()) {
+                continue; // Skip jika NOP kosong atau sudah ada di database
             }
 
             $this->data[] = [
                 'nop'                           => $nop,
-                'objek_pajak_jalan_dusun_op'    => $this->extractValue($row, $normalizedRow, ['objek_pajak_jalan_dusun_op'], 2),
-                'objek_pajak_rt'                => $this->extractValue($row, $normalizedRow, ['objek_pajak_rt'], 3),
-                'objek_pajak_rw'                => $this->extractValue($row, $normalizedRow, ['objek_pajak_rw'], 4),
-                'objek_pajak_desa'              => $this->extractValue($row, $normalizedRow, ['objek_pajak_desa'], 5),
-                'subjek_pajak_nama_wajib_pajak' => $this->extractValue($row, $normalizedRow, ['subjek_pajak_nama_wajib_pajak'], 6),
-                'subjek_pajak_jalan_dusun'      => $this->extractValue($row, $normalizedRow, ['subjek_pajak_jalan_dusun'], 7),
-                'subjek_pajak_rt'               => $this->extractValue($row, $normalizedRow, ['subjek_pajak_rt'], 8),
-                'subjek_pajak_rw'               => $this->extractValue($row, $normalizedRow, ['subjek_pajak_rw'], 9),
-                'subjek_pajak_desa_kel'         => $this->extractValue($row, $normalizedRow, ['subjek_pajak_desa_kel'], 10),
-                'subjek_pajak_kabupaten_kota'   => $this->extractValue($row, $normalizedRow, ['subjek_pajak_kabupaten_kota'], 11),
-                'bumi'                          => $this->extractValue($row, $normalizedRow, ['bumi'], 12, null),
-                'bng'                           => $this->extractValue($row, $normalizedRow, ['bng'], 13, null),
-                'jns_bumi'                      => $this->extractValue($row, $normalizedRow, ['jns_bumi'], 14, null),
-                'usulan_pembetulan'             => $this->extractValue($row, $normalizedRow, ['usulan_pembetulan'], 15, null),
+                'objek_pajak_jalan_dusun_op'    => $this->extractValue($row, 2),
+                'objek_pajak_rt'                => $this->extractValue($row, 3),
+                'objek_pajak_rw'                => $this->extractValue($row, 4),
+                'objek_pajak_desa'              => $this->extractValue($row, 5),
+                'subjek_pajak_nama_wajib_pajak' => $this->extractValue($row, 6),
+                'subjek_pajak_jalan_dusun'      => $this->extractValue($row, 7),
+                'subjek_pajak_rt'               => $this->extractValue($row, 8),
+                'subjek_pajak_rw'               => $this->extractValue($row, 9),
+                'subjek_pajak_desa_kel'         => $this->extractValue($row, 10),
+                'subjek_pajak_kabupaten_kota'   => $this->extractValue($row, 11),
+                'bumi'                          => $this->extractValue($row, 12, null),
+                'bng'                           => $this->extractValue($row, 13, null),
+                'jns_bumi'                      => $this->extractValue($row, 14, null),
+                'usulan_pembetulan'             => $this->extractValue($row, 15, null),
+                'blok'                          => $this->extractValue($row, 16, null),
+                'no_urut'                       => $this->extractValue($row, 17, null),
             ];
         }
     }
@@ -90,33 +92,14 @@ class SismiopImport implements ToCollection, WithHeadingRow
         return false;
     }
 
-    protected function extractValue(Collection $row, array $normalizedRow, array $possibleKeys, int $fallbackIndex, $default = '')
+    protected function extractValue(array $row, int $index, $default = '')
     {
-        foreach ($possibleKeys as $key) {
-            if ($row->has($key)) {
-                $value = $row->get($key);
-
-                if ($value === null) {
-                    continue;
-                }
-
-                $cleaned = $this->cleanValue($value);
-                if ($cleaned !== '') {
-                    return $cleaned;
-                }
-            }
-        }
-
-        if (array_key_exists($fallbackIndex, $normalizedRow)) {
-            $cleaned = $this->cleanValue($normalizedRow[$fallbackIndex]);
+        if (array_key_exists($index, $row)) {
+            $cleaned = $this->cleanValue($row[$index]);
 
             if ($cleaned !== '') {
                 return $cleaned;
             }
-        }
-
-        if ($default === null) {
-            return null;
         }
 
         return $default;
