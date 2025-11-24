@@ -13,7 +13,7 @@ return new class extends Migration
     {
     Schema::create('dhr_desa_temurejo', function (Blueprint $table) {
     $table->id();
-    $table->string('nop')->nullable();
+    $table->string('nop')->unique(); // Menambahkan constraint unique pada kolom nop
     $table->string('objek_pajak_jalan_dusun_op')->nullable();
     $table->string('objek_pajak_rt')->nullable();
     $table->string('objek_pajak_rw')->nullable();
@@ -28,6 +28,8 @@ return new class extends Migration
     $table->string('bng')->nullable();
     $table->string('jns_bumi')->nullable();
     $table->string('usulan_pembetulan')->nullable();
+    $table->string('blok')->nullable();
+    $table->string('no_urut')->nullable();
     $table->timestamps();
 });
     }

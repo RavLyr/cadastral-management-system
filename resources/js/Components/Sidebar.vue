@@ -26,7 +26,7 @@ const menuItems = [
     icon: Clipboard,
   },
   {
-    name: 'Peta Blok',
+    name: 'Upload Peta',
     route: '/peta',
     icon: Map,
   },
