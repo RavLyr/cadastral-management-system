@@ -10,13 +10,8 @@ class PrintController extends Controller
 {
     public function generate($id)
     {
-        // Fetch tanah with blok relation
         $tanah = Tanah::with('blok')->findOrFail($id);
-
-        // Create new PDF document
         $pdf = new Fpdi('P', 'mm', 'A4', true, 'UTF-8', false);
-
-        // Set document information
         $pdf->SetCreator('Buku C Digital');
         $pdf->SetAuthor('System');
         $pdf->SetTitle('Data Tanah - ' . $tanah->nama_wajib_ipeda);
@@ -99,9 +94,14 @@ class PrintController extends Controller
 
         if (file_exists($mapPath)) {
             if (pathinfo($mapPath, PATHINFO_EXTENSION) === 'pdf') {
-                $pageCount = $pdf->setSourceFile($mapPath);
-                $tplIdx = $pdf->importPage(1); // Halaman pertama
-                $pdf->useTemplate($tplIdx, 0, 0, 210, 315); // Mulai dari 0,0 - ukuran eksak 210x315mm
+                try {
+                    $pageCount = $pdf->setSourceFile($mapPath);
+                    $tplIdx = $pdf->importPage(1);
+                    $pdf->useTemplate($tplIdx, 0, 0, 210, 315);
+                } catch (\Exception $e) {
+                    $pdf->SetFont('helvetica', '', 12);
+                    $pdf->Cell(0, 10, 'Gagal memuat file PDF: ' . $e->getMessage(), 0, 1, 'C');
+                }
             } else {
                 $pdf->Image($mapPath, 0, 0, 210, 315, '', '', '', false, 300, '', false, false, 0);
             }

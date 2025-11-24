@@ -51,8 +51,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/commit', [SismiopController::class, 'commit'])->name('sismiop.commit');
         Route::delete('/clear', [SismiopController::class, 'clear'])->name('sismiop.clear');
         Route::delete('/{id}', [SismiopController::class, 'destroy'])->name('sismiop.destroy');
+        Route::put('/{id}', [SismiopController::class, 'update'])->name('sismiop.update');
+        Route::get('/{id}/edit', [SismiopController::class, 'edit'])->name('sismiop.edit');
     });
-
     Route::get('/print/{id}', [PrintController::class, 'generate'])->name('print.generate');
 });
 
