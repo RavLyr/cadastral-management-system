@@ -38,6 +38,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pencarian', [PencarianController::class, 'index'])->name('pencarian.index');
     Route::get('/sismiop', [SismiopController::class, 'index'])->name('sismiop.index');
     Route::post('/sismiop', [SismiopController::class, 'import'])->name('sismiop.import');
+    Route::put('/sismiop/{id}', [SismiopController::class, 'update'])->name('sismiop.update');
+    Route::get('/sismiop/{id}/edit', [SismiopController::class, 'edit'])->name('sismiop.edit');
     Route::post('/sismiop/commit', [SismiopController::class, 'commit'])->name('sismiop.commit');
     Route::delete('/sismiop/clear', [SismiopController::class, 'clear'])->name('sismiop.clear');
     Route::delete('/sismiop/{id}', [SismiopController::class, 'destroy'])->name('sismiop.destroy');

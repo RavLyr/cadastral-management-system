@@ -3,7 +3,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import FormInput from '@/Components/FormInput.vue';
 import Table from '@/Components/Table.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { Eye } from 'lucide-vue-next';
 import { Trash2 } from 'lucide-vue-next';
@@ -90,12 +90,14 @@ const headers = [
     { key: 'skala', label: 'Skala' },
     { key: 'aksi', label: 'Aksi' },
 ];
-const skalaOptions = [
-    { value: '1:1000', label: '1:1000' },
-    { value: '1:2000', label: '1:2000' },
-    { value: '1:5000', label: '1:5000' },
-    { value: '1:10000', label: '1:10000' },
-];
+
+watch(() => form.skala, (newVal) => {
+    const regex = /^1:\d+$/;
+    if (newVal && !regex.test(newVal)) {
+        toast.error('Skala harus dalam format 1:xxxx (contoh: 1:1000)');
+        form.skala = '';
+    }
+});
 </script>
 
 <template>
@@ -117,7 +119,13 @@ const skalaOptions = [
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <FormInput v-model="form.nama_blok" label="Nama Blok" type="text"
                         placeholder="Contoh: Blok Cendana 01" required />
-                    <FormInput v-model="form.skala" label="Skala Peta" type="select" :options="skalaOptions" required />
+                    <FormInput
+                        v-model="form.skala"
+                        label="Skala Peta"
+                        type="text"
+                        placeholder="Masukkan skala (contoh: 1:1000)"
+                        required
+                    />
                 </div>
 
                 <!-- Upload PDF File -->

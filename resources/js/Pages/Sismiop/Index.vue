@@ -3,11 +3,16 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import Table from '@/Components/Table.vue';
 import Modal from '@/Components/Modal.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { toast } from 'vue-sonner';
 import SearchBar from '@/Components/SearchBar.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { Trash } from 'lucide-vue-next';
+import { UploadCloudIcon } from 'lucide-vue-next';
+import { Sheet } from 'lucide-vue-next';
+import { LucideEdit } from 'lucide-vue-next';
+import { Trash2Icon } from 'lucide-vue-next';
+import DangerButton from '@/Components/DangerButton.vue';
+import { Trash2 } from 'lucide-vue-next';
 
 const props = defineProps({
     importedData: {
@@ -27,13 +32,14 @@ const form = useForm({
 const uploadProgress = ref(0);
 const uploading = ref(false);
 const selectedFile = ref(null);
-const showModal = ref(false);
 const isPreviewMode = ref(false);
 const showCommitModal = ref(false);
 const showDetailModal = ref(false);
 const showDeleteModal = ref(false);
+const showDeleteAllModal = ref(false);
 const selectedRow = ref(null);
 const selectedId = ref(null);
+const deleteAllConfirmation = ref('');
 
 // Tambahkan ref untuk search
 const search = ref('');
@@ -112,28 +118,10 @@ const commitData = () => {
 };
 
 const clearData = () => {
-    if (confirm('Apakah Anda yakin ingin menghapus semua data import?')) {
-        router.delete('/sismiop/clear', {
-            onSuccess: () => {
-                toast.success('Data berhasil dihapus');
-                isPreviewMode.value = false;
-            },
-            onError: (errors) => {
-                toast.error('Terjadi kesalahan saat menghapus data');
-            },
-        });
-    }
+    openDeleteAllModal();
 };
 
-const openDetail = (row) => {
-    selectedRow.value = row;
-    showDetailModal.value = true;
-};
 
-const closeDetailModal = () => {
-    showDetailModal.value = false;
-    selectedRow.value = null;
-};
 
 const openDeleteModal = (id) => {
     selectedId.value = id;
@@ -150,6 +138,27 @@ const confirmDelete = () => {
         onSuccess: () => {
             toast.success('Data berhasil dihapus');
             closeDeleteModal();
+        },
+        onError: (errors) => {
+            toast.error('Terjadi kesalahan saat menghapus data');
+        },
+    });
+};
+
+const openDeleteAllModal = () => {
+    showDeleteAllModal.value = true;
+};
+
+const closeDeleteAllModal = () => {
+    showDeleteAllModal.value = false;
+    deleteAllConfirmation.value = '';
+};
+
+const confirmDeleteAll = () => {
+    router.delete('/sismiop/clear', {
+        onSuccess: () => {
+            toast.success('Semua data berhasil dihapus');
+            closeDeleteAllModal();
         },
         onError: (errors) => {
             toast.error('Terjadi kesalahan saat menghapus data');
@@ -174,7 +183,7 @@ const headers = [
     { key: 'subjek_pajak_nama_wajib_pajak', label: 'Nama Wajib Pajak' },
     { key: 'bumi', label: 'Bumi' },
     { key: 'bng', label: 'Bangunan' },
-    { key: 'aksi', label: 'Aksi', class:'text-center px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' },
+    { key: 'aksi', label: 'Aksi', class: 'text-center px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' },
 ];
 
 // Preview hanya 5 baris pertama
@@ -191,6 +200,10 @@ const existingDataWithNo = computed(() =>
         ...row,
         no: (props.existingData.current_page - 1) * props.existingData.per_page + idx + 1,
     }))
+);
+
+const isDeleteAllConfirmed = computed(() =>
+    deleteAllConfirmation.value.toLowerCase() === 'hapus semua data'
 );
 
 const detailHeaders = [
@@ -210,6 +223,8 @@ const detailRows = computed(() => {
         { field: 'Kabupaten/Kota WP', value: selectedRow.value.subjek_pajak_kabupaten_kota || '-' },
         { field: 'Jenis Bumi', value: selectedRow.value.jns_bumi || '-' },
         { field: 'Usulan Pembetulan', value: selectedRow.value.usulan_pembetulan || '-' },
+        { field: 'Blok', value: selectedRow.value.blok || '-' },
+        { field: 'Nomor Urut', value: selectedRow.value.no_urut || '-' },
     ];
 });
 </script>
@@ -280,17 +295,19 @@ const detailRows = computed(() => {
                         </div>
                     </div>
                     <div class="flex justify-end gap-3">
-                        <button v-if="existingData.length > 0" type="button" @click="clearData"
-                            class="px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
+                        <DangerButton v-if="existingDataWithNo.length > 0" type="button" @click="openDeleteAllModal" class="gap-2 flex">
+                            <Trash2 size="20" />
                             Hapus Semua Data
-                        </button>
+                        </DangerButton>
+                        <a class="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            href="/storage/Template%20DHR%20DESA%20TEMUREJO.xlsx" download>
+                            <Sheet size="20" />
+                            Download Template Excel
+                        </a>
+
                         <button type="submit" :disabled="uploading || !form.file"
                             class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
-                                </path>
-                            </svg>
+                            <UploadCloudIcon size="20" />
                             {{ uploading ? 'Mengupload...' : 'Upload & Preview' }}
                         </button>
                     </div>
@@ -299,11 +316,12 @@ const detailRows = computed(() => {
 
             <!-- Search -->
             <div v-if="!isPreviewMode" class="mb-6">
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <SearchBar v-model="search" :placeholder="'Cari berdasarkan NOP atau Nama Wajib Pajak...'" @search="onSearch" />
-                        </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <SearchBar v-model="search" :placeholder="'Cari berdasarkan NOP atau Nama Wajib Pajak...'"
+                            @search="onSearch" />
                     </div>
+                </div>
             </div>
 
             <!-- Existing Data Table -->
@@ -341,14 +359,16 @@ const detailRows = computed(() => {
                     </template>
                     <template #cell-aksi="{ row }">
                         <div class="flex gap-2 font-bold">
-                            <button @click="openDetail(row)"
-                                class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
-                                Lihat Detail
+                            <button @click="router.get(`/sismiop/${row.id}/edit`)"
+                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">
+
+                                <LucideEdit class="w-5 h-5" />
                             </button>
-                            <button @click="openDeleteModal(row.id)"
-                                class="px-3 py-1 flex justify-center items-center gap-1 flex-row text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">
-                                <Trash size="15" /> <span>Hapus</span>
+                            <button @click="openDeleteModal(row)"
+                                class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Hapus">
+                                <Trash2Icon class="w-5 h-5" />
                             </button>
+
                         </div>
                     </template>
                 </Table>
@@ -435,19 +455,6 @@ const detailRows = computed(() => {
             </Table>
         </div>
 
-        <!-- Detail Modal -->
-        <Modal :show="showDetailModal" @close="closeDetailModal" title="Detail Data SISMIOP" max-width="4xl">
-            <div class="p-6">
-                <Table :headers="detailHeaders" :rows="detailRows" key-field="field">
-                    <template #cell-field="{ row }">
-                        <span class="text-sm font-medium text-gray-900">{{ row.field }}</span>
-                    </template>
-                    <template #cell-value="{ row }">
-                        <span class="text-sm text-gray-700">{{ row.value }}</span>
-                    </template>
-                </Table>
-            </div>
-        </Modal>
 
         <!-- Delete Confirmation Modal -->
         <Modal :show="showDeleteModal" @close="closeDeleteModal" title="Konfirmasi Hapus">
@@ -484,6 +491,78 @@ const detailRows = computed(() => {
                     <button @click="commitData"
                         class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
                         Ya, Simpan
+                    </button>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Delete All Confirmation Modal -->
+        <Modal :show="showDeleteAllModal" title="Konfirmasi Hapus Semua Data" @close="closeDeleteAllModal">
+            <div class="p-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Hapus Semua Data</h3>
+                        <p class="text-sm text-gray-500">Tindakan ini akan menghapus semua data SISMIOP yang tersimpan
+                            di
+                            database.</p>
+                    </div>
+                </div>
+
+                <p class="text-base font-medium text-gray-600 mb-6">
+                    Apakah Anda yakin ingin menghapus semua data SISMIOP? Tindakan ini tidak dapat dibatalkan dan akan
+                    menghapus
+                    <strong>{{ existingData.total }}</strong> record data.
+                </p>
+
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Peringatan</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>Data yang dihapus tidak dapat dikembalikan</li>
+                                    <li>Semua record SISMIOP akan hilang permanen</li>
+                                    <li>Pastikan Anda memiliki backup jika diperlukan</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Konfirmasi Penghapusan
+                    </label>
+                    <input v-model="deleteAllConfirmation" type="text"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        placeholder="Ketik 'hapus semua data' untuk konfirmasi">
+                    <p class="text-xs text-gray-500 mt-1">
+                        Ketik teks konfirmasi di atas untuk mengaktifkan tombol hapus
+                    </p>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button @click="closeDeleteAllModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Batal
+                    </button>
+                    <button @click="confirmDeleteAll" :disabled="!isDeleteAllConfirmed"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors">
+                        Ya, Hapus Semua
                     </button>
                 </div>
             </div>
