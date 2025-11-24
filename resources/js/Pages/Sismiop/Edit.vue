@@ -57,17 +57,17 @@ const submit = () => {
             <form @submit.prevent="submit">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput v-model="form.nop" label="NOP" type="text" disabled required />
-                    <FormInput v-model="form.objek_pajak_jalan_dusun_op" label="Jalan/Dusun OP" type="text" />
-                    <FormInput v-model="form.objek_pajak_rt" label="RT OP" type="text" />
-                    <FormInput v-model="form.objek_pajak_rw" label="RW OP" type="text" />
-                    <FormInput v-model="form.objek_pajak_desa" label="Desa OP" type="text" />
+                    <FormInput v-model="form.objek_pajak_jalan_dusun_op" label="Jalan/Dusun Objek Pajak" type="text" />
+                    <FormInput v-model="form.objek_pajak_rt" label="RT Objek Pajak" type="text" />
+                    <FormInput v-model="form.objek_pajak_rw" label="RW Objek Pajak" type="text" />
+                    <FormInput v-model="form.objek_pajak_desa" label="Desa Objek Pajak" type="text" />
                     <FormInput v-model="form.subjek_pajak_nama_wajib_pajak" label="Nama Wajib Pajak" type="text"
                         required />
-                    <FormInput v-model="form.subjek_pajak_jalan_dusun" label="Jalan/Dusun WP" type="text" />
-                    <FormInput v-model="form.subjek_pajak_rt" label="RT WP" type="text" />
-                    <FormInput v-model="form.subjek_pajak_rw" label="RW WP" type="text" />
-                    <FormInput v-model="form.subjek_pajak_desa_kel" label="Desa/Kel WP" type="text" />
-                    <FormInput v-model="form.subjek_pajak_kabupaten_kota" label="Kabupaten/Kota WP" type="text" />
+                    <FormInput v-model="form.subjek_pajak_jalan_dusun" label="Jalan/Dusun Subjek Pajak" type="text" />
+                    <FormInput v-model="form.subjek_pajak_rt" label="RT Subjek Pajak" type="text" />
+                    <FormInput v-model="form.subjek_pajak_rw" label="RW Subjek Pajak" type="text" />
+                    <FormInput v-model="form.subjek_pajak_desa_kel" label="Desa/Kel Subjek Pajak" type="text" />
+                    <FormInput v-model="form.subjek_pajak_kabupaten_kota" label="Kabupaten/Kota Subjek Pajak" type="text" />
                     <FormInput v-model="form.bumi" label="Bumi" type="number" />
                     <FormInput v-model="form.bng" label="Bangunan" type="number" />
                     <FormInput v-model="form.jns_bumi" label="Jenis Bumi" type="text" />

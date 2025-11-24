@@ -69,12 +69,10 @@ class SismiopController extends Controller
             'map_blok_id' => 'nullable|exists:map_blok,id',
         ]);
         try {
-            //code...
             $sismiop->update($validated);
 
             return Redirect::route('sismiop.index')->with('success', 'Data SISMIOP berhasil diperbarui.');
         } catch (\Exception $e) {
-            //throw $e;
             return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
         }
     }
