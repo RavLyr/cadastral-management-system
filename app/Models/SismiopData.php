@@ -24,5 +24,13 @@ class SismiopData extends Model
         'bng',
         'jns_bumi',
         'usulan_pembetulan',
+        'blok',
+        'no_urut',
+        'map_blok_id',
     ];
+
+    public function mapBlok()
+    {
+        return $this->belongsTo(MapBlok::class, 'map_blok_id');
+    }
 }

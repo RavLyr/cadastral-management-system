@@ -35,9 +35,16 @@ class PetaController extends Controller
         $validated = $request->validate([
 
             'nama_blok' => 'required|string|max:50|unique:map_blok,nama_blok',
-            'skala' => 'required|string|max:20',
-            'file' => 'required|file|mimes:pdf|max:10240', 
+            'skala' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^1:\d+$/'
+            ],
+            'file' => 'required|file|mimes:pdf|max:10240',
             'deskripsi' => 'nullable|string',
+        ], [
+            'skala.regex' => 'Skala harus dalam format 1:xxxx (contoh: 1:1000)',
         ]);
 
         try {
