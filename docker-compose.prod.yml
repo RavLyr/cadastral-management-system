@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: php-runtime
+    container_name: laravel_app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: production
+      APP_KEY: base64:4Xn3wTfPEjIxW/RVKG64VKbIpMpxRY+EQhiHRTjEU7k=
+      APP_DEBUG: false
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: buku_c_temurejo_prod
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    container_name: mysql_prod
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: buku_c_temurejo_prod
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
