@@ -17,4 +17,12 @@ export default defineConfig({
             },
         }),
   ],
+
+  server: process.env.APP_ENV !== 'production' ? {
+    host: true,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+    },
+  } : undefined,
 });

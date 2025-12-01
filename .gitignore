@@ -7,8 +7,13 @@
 /storage/pail
 /vendor
 .env
+/.pnpm-store/*
+.env.*
+!.env.example
 .env.backup
-.env.production
+/scripts/*
+.env.prod
+.env.local
 .phpactor.json
 .phpunit.result.cache
 Homestead.json

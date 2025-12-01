@@ -1,0 +1,44 @@
+# --- OS FILES ---
+.DS_Store
+Thumbs.db
+
+# --- VCS ---
+.git
+.gitignore
+
+# --- COMPOSER (vendor akan dibangun di container builder) ---
+/vendor
+
+# --- NODE MODULES (akan dibangun di node builder) ---
+/node_modules
+
+# --- LARAVEL CACHES (dibuat ulang oleh Laravel di runtime) ---
+/storage/app/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/bootstrap/cache/*
+
+# --- ENV FILES ---
+.env
+.env.*
+!.env.example
+
+# --- TESTS & DEV FILES (tidak diperlukan untuk production) ---
+/tests
+phpunit.xml
+
+# --- DOCUMENTATION ---
+README.md
+*.md
+
+# --- CI/CD FOLDERS ---
+.github
+
+# --- LOGS ---
+*.log
+npm-debug.log*
+
+# --- DOCKER OMITTED ---
+docker-compose*.yml

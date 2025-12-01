@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: php-runtime
+    container_name: laravel_app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    env_file:
+      - .env.prod
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    container_name: mysql_prod
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: buku_c_temurejo_prod
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
