@@ -5,10 +5,10 @@ import Pagination from '@/Components/Pagination.vue';
 import Modal from '@/Components/Modal.vue';
 import FormInput from '@/Components/FormInput.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import InputError from '@/Components/InputError.vue';
 import { toast } from 'vue-sonner';
-import { Search } from 'lucide-vue-next';
+import { PlusIcon, Search, Sheet, SquarePen, Trash2, UploadCloudIcon } from 'lucide-vue-next';
 import SearchBar from '@/Components/SearchBar.vue';
 
 const props = defineProps({
@@ -16,9 +16,13 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    blok: {
+    blokList: {
         type: Array,
-        required: true,
+        default: () => [],
+    },
+    blokCount: {
+        type: Number,
+        default: 0,
     },
     filters: {
         type: Object,
@@ -26,7 +30,8 @@ const props = defineProps({
     },
 });
 
-const search = ref(props.filters.search || '');
+const search = ref(props.filters?.search || '');
+const hasBlok = computed(() => (props.blokCount ?? 0) > 0);
 const showModal = ref(false);
 const showEditModal = ref(false);
 const editingItem = ref(null);
@@ -89,6 +94,9 @@ const onSearch = (value) => {
 
 
 const openModal = () => {
+    if (!hasBlok.value) {
+        return;
+    }
     form.reset();
     showModal.value = true;
 };
@@ -129,8 +137,14 @@ const closeEditModal = () => {
     editingItem.value = null;
     editForm.reset();
 };
-// Generate blok options from backend response
-const blokOptions = (props.blok || []).map(b => ({ value: b.id, label: b.nama_blok }));
+const blokOptions = computed(() => (props.blokList || []).map(b => ({ value: b.id, label: b.nama_blok })));
+
+const goToImport = () => {
+    if (!hasBlok.value) {
+        return;
+    }
+    router.visit('/tanah/import');
+};
 
 const submitForm = () => {
     form.post('/tanah', {
@@ -259,6 +273,11 @@ watch(() => editForm.ipeda_s, (newVal) => {
             <p class="text-sm text-gray-500 mt-1">Kelola dan lihat catatan kepemilikan tanah di desa.</p>
         </div>
 
+        <div v-if="!hasBlok" class="mb-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-800">
+            <p class="font-semibold">Peta blok belum tersedia.</p>
+            <p class="text-sm">Unggah data peta blok terlebih dahulu sebelum menambah atau mengimpor data tanah.</p>
+        </div>
+
         <!-- Search and Add Button -->
         <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
             <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -269,13 +288,26 @@ watch(() => editForm.ipeda_s, (newVal) => {
                         </template>
                     </SearchBar>
                 </div>
-                <button @click="openModal"
-                    class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Tambah Data Tanah
-                </button>
+                <div class="flex flex-wrap gap-3">
+                    <button type="button" @click="goToImport" :disabled="!hasBlok"
+                        class="flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <UploadCloudIcon size="20" />
+                        <!-- {{ uploading ? 'Mengupload...' : 'Upload & Preview' }} -->
+                        Import Excel
+                    </button>
+
+                    <a class="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        href="/templates/Template%20Tanah%20DESA%20TEMUREJO.xlsx" download>
+                        <Sheet size="20" />
+                        Download Template Excel
+                    </a>
+
+                    <button @click="openModal" :disabled="!hasBlok"
+                        class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                        <PlusIcon class="w-5 h-5" />
+                        Tambah Data Tanah
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -304,17 +336,11 @@ watch(() => editForm.ipeda_s, (newVal) => {
                 <div class="flex items-center gap-2">
                     <button @click="openEditModal(row)"
                         class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <SquarePen class="w-5 h-5" />
                     </button>
                     <button @click="openDeleteModal(row)"
                         class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Hapus">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        <Trash2 class="w-5 h-5" />
                     </button>
                 </div>
             </template>
