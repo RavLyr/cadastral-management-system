@@ -35,6 +35,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
+    Route::prefix('tanah')->group(function () {
+        Route::get('/import', [TanahController::class, 'importForm'])->name('tanah.import.form');
+        Route::post('/import/preview', [TanahController::class, 'importPreview'])->name('tanah.import.preview');
+        Route::post('/import/execute', [TanahController::class, 'importExecute'])->name('tanah.import.execute');
+    });
     Route::resource('tanah', TanahController::class);
 
     Route::prefix('peta')->group(function () {
