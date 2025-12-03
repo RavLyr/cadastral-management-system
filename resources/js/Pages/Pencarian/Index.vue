@@ -1,4 +1,4 @@
-<script setup>
+    <script setup>
     import AppLayout from '@/Layouts/AppLayout.vue';
     import PdfPreview from '@/Components/PdfPreview.vue';
     import { Head, router } from '@inertiajs/vue3';
@@ -7,7 +7,6 @@
     import { FileSearch, Maximize2, Printer } from 'lucide-vue-next';
     import SearchBar from '@/Components/SearchBar.vue';
     import Table from '@/Components/Table.vue';
-    import Pagination from '@/Components/Pagination.vue';
 
     const props = defineProps({
         results: {
@@ -69,7 +68,6 @@
     const printPdf = (item) => {
         window.open(`/print/${item.id}`, '_blank');
     };
-
 </script>
 
     <template>
@@ -99,7 +97,7 @@
                     <!-- Results Table -->
                     <div class="overflow-x-auto">
 
-                        <Table :headers="headers" :rows="results?.data ?? []" key-field="id">
+                        <Table :headers="headers" :rows="results" key-field="id">
                             <template #cell-actions="{ row }">
                                 <div class="flex gap-2">
                                     <button @click.stop="viewPeta(row)"
@@ -202,12 +200,12 @@
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-500">Tanggal Perubahan</span>
                                     <span class="text-sm font-medium text-gray-900">{{ selectedItem.tgl_perubahan || '-'
-                                        }}</span>
+                                    }}</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm text-gray-500">Jenis Tanah</span>
                                     <span class="text-sm font-medium text-gray-900">{{ selectedItem.jenis_tanah || '-'
-                                        }}</span>
+                                    }}</span>
                                 </div>
                             </div>
                         </div>

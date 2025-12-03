@@ -35,8 +35,19 @@ RUN pnpm build
 # --- STAGE 3: FINAL RUNTIME FOR LARAVEL ---
 FROM php:8.3-fpm-alpine AS php-runtime
 
-RUN apk add --no-cache nginx curl \
-    && docker-php-ext-install pdo_mysql
+RUN apk add --no-cache \
+        nginx \
+        curl \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo_mysql \
+        zip \
+        gd
 
 WORKDIR /var/www
 
@@ -45,6 +56,13 @@ COPY --from=php-builder /app /var/www
 
 # Copy built assets
 COPY --from=node-builder /app/public/build /var/www/public/build
+
+
+COPY resources/templates /var/www/public/templates
+
+RUN chmod -R 755 /var/www/public/templates \
+    && chown -R www-data:www-data /var/www/public/templates
+
 
 # Permissions
 RUN chown -R www-data:www-data /var/www && chmod -R 775 storage bootstrap/cache
