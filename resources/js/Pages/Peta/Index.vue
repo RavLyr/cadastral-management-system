@@ -33,7 +33,7 @@ const handleFileChange = (event) => {
         form.file = file;
         selectedFile.value = file;
     } else {
-        alert('Harap pilih file PDF');
+        toast.error('Harap pilih file PDF');
         event.target.value = '';
     }
 };
@@ -63,7 +63,15 @@ const submitUpload = () => {
         onError: (errors) => {
             uploading.value = false;
             uploadProgress.value = 0;
-            toast.error(errors?.error || 'Gagal mengunggah peta blok. Silakan cek input Anda.');
+            console.log(errors);
+            if(typeof errors == 'object') {
+                for (const key in errors) {
+                    if (errors.hasOwnProperty(key)) {
+                        toast.error(errors[key] || 'Gagal mengunggah peta blok. Silakan cek input Anda.');
+                    }
+                }
+            }
+
         },
     });
 };
