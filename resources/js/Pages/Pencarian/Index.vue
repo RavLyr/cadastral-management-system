@@ -7,6 +7,7 @@
     import { FileSearch, Maximize2, Printer } from 'lucide-vue-next';
     import SearchBar from '@/Components/SearchBar.vue';
     import Table from '@/Components/Table.vue';
+    import Pagination from '@/Components/Pagination.vue';
 
     const props = defineProps({
         results: {
@@ -97,7 +98,7 @@
                     <!-- Results Table -->
                     <div class="overflow-x-auto">
 
-                        <Table :headers="headers" :rows="results" key-field="id">
+                        <Table :headers="headers" :rows="results?.data ?? []" key-field="id">
                             <template #cell-actions="{ row }">
                                 <div class="flex gap-2">
                                     <button @click.stop="viewPeta(row)"
