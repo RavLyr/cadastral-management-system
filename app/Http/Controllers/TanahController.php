@@ -6,6 +6,7 @@ use App\Imports\TanahImport;
 use App\Models\Tanah;
 use App\Models\MapBlok;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -135,6 +136,13 @@ class TanahController extends Controller
                 return [Str::upper(trim($name)) => $id];
             });
 
+        // Fetch semua kombinasi blok_id|nomor_persil yang sudah ada untuk avoid N+1 query
+        $existingCombinations = Tanah::select('blok_id', 'nomor_persil')
+            ->get()
+            ->mapWithKeys(function ($tanah) {
+                return [$tanah->blok_id . '|' . strtolower($tanah->nomor_persil) => true];
+            });
+
         $errors = [];
         $validRows = [];
         $seenCombination = [];
@@ -172,7 +180,7 @@ class TanahController extends Controller
                 continue;
             }
 
-            $combinationKey = $blokId . '|' . Str::lower($rowData['nomor_persil']);
+            $combinationKey = $blokId . '|' . strtolower($rowData['nomor_persil']);
 
             if (isset($seenCombination[$combinationKey])) {
                 $errors[] = [
@@ -183,11 +191,7 @@ class TanahController extends Controller
                 continue;
             }
 
-            $exists = Tanah::where('blok_id', $blokId)
-                ->where('nomor_persil', $rowData['nomor_persil'])
-                ->exists();
-
-            if ($exists) {
+            if (isset($existingCombinations[$combinationKey])) {
                 $errors[] = [
                     'row' => $rowNumber,
                     'field' => 'nomor_persil',
@@ -204,7 +208,8 @@ class TanahController extends Controller
         $previewId = $canImport ? (string) Str::uuid() : null;
 
         if ($canImport) {
-            Cache::put($this->previewCacheKey($previewId), $validRows, now()->addMinutes(30));
+            $userId = Auth::id();
+            Cache::put($this->previewCacheKey($previewId, $userId), $validRows, now()->addMinutes(30));
         }
 
         session()->flash('tanah_import_preview', [
@@ -226,7 +231,8 @@ class TanahController extends Controller
             'preview_id' => 'required|string',
         ]);
 
-        $cacheKey = $this->previewCacheKey($request->input('preview_id'));
+        $userId = Auth::id();
+        $cacheKey = $this->previewCacheKey($request->input('preview_id'), $userId);
         $rows = Cache::pull($cacheKey);
 
         if (!$rows) {
@@ -280,10 +286,10 @@ class TanahController extends Controller
                 $uniqueRule,
             ],
             'kelas_desa' => 'nullable|string|max:50',
-            'luas_ha' => 'nullable|numeric',
-            'luas_da' => 'nullable|numeric',
-            'ipeda_r' => 'nullable|numeric',
-            'ipeda_s' => 'nullable|numeric',
+            'luas_ha' => 'nullable|numeric|min:0',
+            'luas_da' => 'nullable|numeric|min:0',
+            'ipeda_r' => 'nullable|numeric|min:0',
+            'ipeda_s' => 'nullable|numeric|min:0',
             'jenis_tanah' => 'required|in:basah,kering',
             'sebab_perubahan' => 'nullable|string',
             'tgl_perubahan' => 'nullable|date',
@@ -299,10 +305,10 @@ class TanahController extends Controller
             'tempat_tinggal' => 'nullable|string|max:255',
             'nomor_persil' => 'required|string|max:50',
             'kelas_desa' => 'nullable|string|max:50',
-            'luas_ha' => 'nullable|numeric',
-            'luas_da' => 'nullable|numeric',
-            'ipeda_r' => 'nullable|numeric',
-            'ipeda_s' => 'nullable|numeric',
+            'luas_ha' => 'nullable|numeric|min:0',
+            'luas_da' => 'nullable|numeric|min:0',
+            'ipeda_r' => 'nullable|numeric|min:0',
+            'ipeda_s' => 'nullable|numeric|min:0',
             'jenis_tanah' => 'required|in:basah,kering',
             'sebab_perubahan' => 'nullable|string',
             'tgl_perubahan' => 'nullable|date',
@@ -329,8 +335,8 @@ class TanahController extends Controller
         ];
     }
 
-    private function previewCacheKey(string $previewId): string
+    private function previewCacheKey(string $previewId, ?int $userId): string
     {
-        return "tanah-import-{$previewId}";
+        return "tanah-import-{$userId}-{$previewId}";
     }
 }

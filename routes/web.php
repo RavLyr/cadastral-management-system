@@ -6,6 +6,7 @@ use App\Http\Controllers\TanahController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SismiopController;
 use App\Http\Controllers\PrintController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,6 +35,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
+
+    // Template routes
+    Route::get('/templates/{template}', [TemplateController::class, 'download'])->name('template.download');
 
     Route::prefix('tanah')->group(function () {
         Route::get('/import', [TanahController::class, 'importForm'])->name('tanah.import.form');

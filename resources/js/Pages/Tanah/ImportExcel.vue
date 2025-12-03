@@ -34,6 +34,7 @@ const executeForm = useForm({
 
 const showErrorModal = ref(false);
 const fileInput = ref(null);
+const currentRequestId = ref(null);
 const isLocked = computed(() => (props.blokCount ?? 0) === 0);
 const errorRows = computed(() => props.preview?.errors ?? []);
 
@@ -59,12 +60,17 @@ const submitPreview = () => {
         return;
     }
 
+    const requestId = Date.now();
+    currentRequestId.value = requestId;
+
     previewForm.post('/tanah/import/preview', {
         forceFormData: true,
-        onFinish: () => {
-            previewForm.file = null;
-            if (fileInput.value) {
-                fileInput.value.value = '';
+        onSuccess: () => {
+            if (currentRequestId.value === requestId) {
+                previewForm.file = null;
+                if (fileInput.value) {
+                    fileInput.value.value = '';
+                }
             }
         },
     });
