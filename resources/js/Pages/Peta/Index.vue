@@ -2,12 +2,11 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import FormInput from '@/Components/FormInput.vue';
 import Table from '@/Components/Table.vue';
+import Modal from '@/Components/Modal.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
-import { Eye } from 'lucide-vue-next';
-import { Trash2 } from 'lucide-vue-next';
-import { CheckCircle } from 'lucide-vue-next';
+import { Eye, Trash2, CheckCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     petaBlok: {
@@ -25,6 +24,8 @@ const form = useForm({
 const uploadProgress = ref(0);
 const uploading = ref(false);
 const selectedFile = ref(null);
+const showDeleteModal = ref(false);
+const deletingId = ref(null);
 
 const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -71,17 +72,30 @@ const viewPdf = (url) => {
     window.open(url, '_blank');
 };
 
+const openDeleteModal = (id) => {
+    deletingId.value = id;
+    showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+    showDeleteModal.value = false;
+    deletingId.value = null;
+};
+
+const confirmDelete = () => {
+    router.delete(`/peta/${deletingId.value}`, {
+        onSuccess: () => {
+            toast.success('Peta blok berhasil dihapus!');
+            closeDeleteModal();
+        },
+        onError: (errors) => {
+            toast.error(errors?.error || 'Gagal menghapus peta blok.');
+        },
+    });
+};
+
 const deletePeta = (id) => {
-    if (confirm('Apakah Anda yakin ingin menghapus peta blok ini?')) {
-        router.delete(`/peta/${id}`, {
-            onSuccess: () => {
-                toast.success('Peta blok berhasil dihapus!');
-            },
-            onError: (errors) => {
-                toast.error(errors?.error || 'Gagal menghapus peta blok.');
-            },
-        });
-    }
+    openDeleteModal(id);
 };
 
 const headers = [
@@ -217,5 +231,22 @@ watch(() => form.skala, (newVal) => {
                 </template>
             </Table>
         </div>
+
+        <!-- Delete Confirmation Modal -->
+        <Modal :show="showDeleteModal" @close="closeDeleteModal" title="Konfirmasi Hapus Peta Blok" max-width="md">
+            <p>Apakah Anda yakin ingin menghapus peta blok ini? Tindakan ini tidak dapat dibatalkan.</p>
+            <template #footer>
+                <div class="flex justify-end gap-3">
+                    <button type="button" @click="closeDeleteModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="button" @click="confirmDelete"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                        Ya, Hapus
+                    </button>
+                </div>
+            </template>
+        </Modal>
     </AppLayout>
 </template>
