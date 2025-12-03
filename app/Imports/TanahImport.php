@@ -16,7 +16,7 @@ class TanahImport implements ToCollection, WithStartRow
     public function collection(Collection $rows)
     {
         foreach ($rows as $index => $row) {
-            $rowNumber = $index + 1;
+            $rowNumber = $index + $this->startRow();
 
             $mapped = [
                 'row_number' => $rowNumber,

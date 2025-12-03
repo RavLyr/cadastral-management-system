@@ -292,7 +292,6 @@ watch(() => editForm.ipeda_s, (newVal) => {
                     <button type="button" @click="goToImport" :disabled="!hasBlok"
                         class="flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <UploadCloudIcon size="20" />
-                        <!-- {{ uploading ? 'Mengupload...' : 'Upload & Preview' }} -->
                         Import Excel
                     </button>
 

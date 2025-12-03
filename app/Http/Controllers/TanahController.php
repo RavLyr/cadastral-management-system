@@ -119,7 +119,8 @@ class TanahController extends Controller
         try {
             Excel::import($import, $request->file('file'));
         } catch (\Throwable $e) {
-            return back()->withErrors(['error' => 'Gagal membaca file: ' . $e->getMessage()]);
+            report($e);
+            return back()->withErrors(['error' => 'Gagal membaca file.']);
         }
 
         $rows = collect($import->rows());
@@ -235,14 +236,18 @@ class TanahController extends Controller
         DB::beginTransaction();
 
         try {
-            foreach ($rows as $row) {
-                Tanah::create($row);
+            $now = now();
+            foreach ($rows as &$row) {
+                $row['created_at'] = $now;
+                $row['updated_at'] = $now;
             }
+            Tanah::insert($rows);
 
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal mengimpor data: ' . $e->getMessage()]);
+            report($e->getMessage());
+            return back()->withErrors(['error' => 'Gagal mengimpor data. Silakan coba lagi atau hubungi administrator.']);
         }
 
         return Redirect::route('tanah.index')->with('success', 'Data Tanah berhasil diimport.');
