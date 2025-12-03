@@ -24,8 +24,8 @@ class PencarianController extends Controller
         }
 
         $results = $query->orderBy('nama_wajib_ipeda')
-            ->get()
-            ->map(function ($item) {
+            ->paginate(5) // Changed from get() to paginate(5)
+            ->through(function ($item) {
                 return [
                     'id' => $item->id,
                     'nama_wajib_ipeda' => $item->nama_wajib_ipeda,
