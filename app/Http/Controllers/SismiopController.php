@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\SismiopData;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SismiopController extends Controller
@@ -18,7 +19,7 @@ class SismiopController extends Controller
 
         if ($request->search) {
             $query->where('nop', 'like', "%{$request->search}%")
-                  ->orWhere('subjek_pajak_nama_wajib_pajak', 'like', "%{$request->search}%");
+                ->orWhere('subjek_pajak_nama_wajib_pajak', 'like', "%{$request->search}%");
         }
 
         $existingData = $query->paginate(10)->withQueryString();
@@ -86,15 +87,35 @@ class SismiopController extends Controller
         }
 
         try {
-            foreach ($importedData as $data) {
-                SismiopData::create($data);
+            $now = now();
+            foreach ($importedData as &$data) {
+                $data['created_at'] = $now;
+                $data['updated_at'] = $now;
+            }
+
+            $batchSize = 1000;
+            $insertedCount = 0;
+            $skippedCount = 0;
+
+            foreach (array_chunk($importedData, $batchSize) as $batch) {
+                $inserted = SismiopData::insertOrIgnore($batch);
+                $insertedCount += $inserted;
+                $skippedCount += count($batch) - $inserted;
             }
 
             session()->forget('imported_data');
 
-            return redirect()->route('sismiop.index')->with('success', 'Data SISMIOP berhasil disimpan.');
+            $message = "Data SISMIOP berhasil disimpan. {$insertedCount} data baru ditambahkan";
+            if ($skippedCount > 0) {
+                $message .= ", {$skippedCount} data duplikat diabaikan.";
+            } else {
+                $message .= ".";
+            }
+
+            return redirect()->route('sismiop.index')->with('success', $message);
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Gagal menyimpan data: ' . $e->getMessage()]);
+            Log::error('Commit Error: ' . $e->getMessage(), ['exception' => $e]);
+            return back()->withErrors(['error' => 'Gagal menyimpan data. Silakan coba lagi atau hubungi administrator.']);
         }
     }
 

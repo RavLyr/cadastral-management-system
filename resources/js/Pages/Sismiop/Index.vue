@@ -102,8 +102,8 @@ const closeCommitModal = () => {
 
 const commitData = () => {
     router.post('/sismiop/commit', {}, {
-        onSuccess: () => {
-            toast.success('Data berhasil disimpan ke database');
+        onSuccess: (success) => {
+            toast.success(success.props.flash.success || 'Data berhasil disimpan ke database');
             showCommitModal.value = false;
             isPreviewMode.value = false;
             router.visit('/sismiop', {
