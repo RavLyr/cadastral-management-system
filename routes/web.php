@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('peta')->group(function () {
         Route::get('/', [PetaController::class, 'index'])->name('peta.index');
+        Route::get('/map', [PetaController::class, 'map'])->name('peta.map');
         Route::post('/', [PetaController::class, 'store'])->name('peta.store');
         Route::delete('/{id}', [PetaController::class, 'destroy'])->name('peta.destroy');
     });
@@ -63,3 +64,49 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+
+// Development routes for testing PostGIS connectivity and GeoJSON output
+Route::get('/dev/postgis-test', function () {
+    try {
+        $conn = \Illuminate\Support\Facades\DB::connection('pgsql');
+
+        // Check if gis table exists
+        $table = $conn->selectOne("SELECT to_regclass('public.gis_bidang_tanah') as exists");
+        if (! $table || ! $table->exists) {
+            return response()->json(['error' => 'gis_bidang_tanah table not found. Run migrations on pgsql or switch DB_CONNECTION to pgsql.'], 400);
+        }
+
+        $versionRow = $conn->selectOne('SELECT PostGIS_Version() as version');
+        $version = $versionRow->version ?? null;
+
+        // Insert a dummy MultiPolygon (replace existing test row if present)
+        $nop = 'TEST-NOP-001';
+        $geojson = json_encode([
+            'type' => 'MultiPolygon',
+            'coordinates' => [[[
+                [110.7001, -7.1001],
+                [110.7002, -7.1001],
+                [110.7002, -7.1002],
+                [110.7001, -7.1002],
+                [110.7001, -7.1001]
+            ]]]
+        ]);
+        $properties = json_encode(['source' => 'dev-test']);
+
+        $conn->delete('DELETE FROM gis_bidang_tanah WHERE nop = ?', [$nop]);
+        $conn->insert("INSERT INTO gis_bidang_tanah (nop, properties, created_at, updated_at, geom) VALUES (?, ?::jsonb, now(), now(), ST_SetSRID(ST_GeomFromGeoJSON(?),4326))", [$nop, $properties, $geojson]);
+
+        $row = $conn->selectOne('SELECT nop, properties, ST_AsGeoJSON(geom)::json as geometry FROM gis_bidang_tanah WHERE nop = ? LIMIT 1', [$nop]);
+
+        return response()->json([
+            'postgis_version' => $version,
+            'sample' => [
+                'nop' => $row->nop,
+                'properties' => json_decode($row->properties, true),
+                'geometry' => json_decode($row->geometry, true),
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});

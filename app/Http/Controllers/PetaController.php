@@ -27,6 +27,14 @@ class PetaController extends Controller
 
         return Inertia::render('Peta/Index', [
             'petaBlok' => $petaBlok,
+            'initialNop' => request()->query('nop'),
+        ]);
+    }
+
+    public function map()
+    {
+        return Inertia::render('Peta/Map', [
+            'initialNop' => request()->query('nop'),
         ]);
     }
 

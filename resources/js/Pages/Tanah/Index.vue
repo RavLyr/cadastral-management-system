@@ -5,7 +5,7 @@ import Pagination from '@/Components/Pagination.vue';
 import Modal from '@/Components/Modal.vue';
 import FormInput from '@/Components/FormInput.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import InputError from '@/Components/InputError.vue';
 import { toast } from 'vue-sonner';
 import { PlusIcon, Search, Sheet, SquarePen, Trash2, UploadCloudIcon } from 'lucide-vue-next';
@@ -28,6 +28,18 @@ const props = defineProps({
         type: Object,
         default: () => ({}),
     },
+    openCreateModal: {
+        type: Boolean,
+        default: false,
+    },
+    initialCreateNop: {
+        type: String,
+        default: null,
+    },
+    createPrefill: {
+        type: Object,
+        default: null,
+    },
 });
 
 const search = ref(props.filters?.search || '');
@@ -44,6 +56,7 @@ const errorMessage = ref('');
 // Form for creating new data
 const form = useForm({
     no_urut: '',
+    nop: '',
     nama_wajib_ipeda: '',
     tempat_tinggal: '',
     nomor_persil: '',
@@ -59,6 +72,7 @@ const form = useForm({
 
 const editForm = useForm({
     no_urut: '',
+    nop: '',
     nama_wajib_ipeda: '',
     tempat_tinggal: '',
     nomor_persil: '',
@@ -98,6 +112,8 @@ const openModal = () => {
         return;
     }
     form.reset();
+    form.nop = props.initialCreateNop || '';
+    applyCreatePrefill();
     showModal.value = true;
 };
 
@@ -118,6 +134,7 @@ const closeDeleteModal = () => {
 const openEditModal = (item) => {
     editingItem.value = item;
     editForm.no_urut = item.no_urut;
+    editForm.nop = item.nop;
     editForm.nama_wajib_ipeda = item.nama_wajib_ipeda;
     editForm.tempat_tinggal = item.tempat_tinggal;
     editForm.nomor_persil = item.nomor_persil;
@@ -260,6 +277,26 @@ watch(() => editForm.ipeda_s, (newVal) => {
         errors.value.edit_ipeda_s = '';
     }
 });
+
+onMounted(() => {
+    if (props.openCreateModal) {
+        form.reset();
+        form.nop = props.initialCreateNop || '';
+        applyCreatePrefill();
+        showModal.value = true;
+    }
+});
+
+const applyCreatePrefill = () => {
+    if (!props.createPrefill) {
+        return;
+    }
+
+    form.nop = props.createPrefill.nop || form.nop;
+    form.nama_wajib_ipeda = props.createPrefill.nama_wajib_ipeda || form.nama_wajib_ipeda;
+    form.tempat_tinggal = props.createPrefill.tempat_tinggal || form.tempat_tinggal;
+    form.luas_ha = props.createPrefill.luas_ha || form.luas_ha;
+};
 </script>
 
 <template>
@@ -363,6 +400,8 @@ watch(() => editForm.ipeda_s, (newVal) => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput v-model="form.no_urut" label="No Urut" type="text"
                         placeholder="Silakan Input Nomor Urut disini..." />
+                    <FormInput v-model="form.nop" label="NOP" type="text"
+                        placeholder="Silakan Input NOP disini..." />
                     <FormInput v-model="form.nama_wajib_ipeda" label="Nama Wajib IPEDA" type="text" required
                         placeholder="Silakan Input Wajib IPEDA disini..." />
                     <FormInput v-model="form.tempat_tinggal" label="Tempat Tinggal" type="text"
@@ -421,6 +460,7 @@ watch(() => editForm.ipeda_s, (newVal) => {
             <form @submit.prevent="updateForm">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput v-model="editForm.no_urut" label="No Urut" type="text" />
+                    <FormInput v-model="editForm.nop" label="NOP" type="text" />
                     <FormInput v-model="editForm.nama_wajib_ipeda" label="Nama Wajib IPEDA" type="text" required />
                     <FormInput v-model="editForm.tempat_tinggal" label="Tempat Tinggal" type="text" />
                     <FormInput v-model="editForm.nomor_persil" label="Nomor Persil" type="text" required />

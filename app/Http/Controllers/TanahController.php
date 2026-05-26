@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Imports\TanahImport;
 use App\Models\Tanah;
 use App\Models\MapBlok;
+use App\Models\SismiopData;
+use App\Support\NopNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +26,9 @@ class TanahController extends Controller
 
         if ($search) {
             $tanahQuery->where(function ($query) use ($search) {
-                $query->where('nama_wajib_ipeda', 'like', "%{$search}%")
+                $query->where('nop', 'like', "%{$search}%")
+                    ->orWhere('nop_raw', 'like', "%{$search}%")
+                    ->orWhere('nama_wajib_ipeda', 'like', "%{$search}%")
                     ->orWhere('nomor_persil', 'like', "%{$search}%")
                     ->orWhere('jenis_tanah', 'like', "%{$search}%")
                     ->orWhereHas('blok', function ($q) use ($search) {
@@ -47,6 +51,69 @@ class TanahController extends Controller
             ],
             'blokList' => $blokList,
             'blokCount' => $blokList->count(),
+            'openCreateModal' => false,
+            'initialCreateNop' => null,
+            'createPrefill' => null,
+        ]);
+    }
+
+    public function create(Request $request)
+    {
+        $search = $request->input('search');
+        $tanahQuery = Tanah::with(['blok:id,nama_blok']);
+
+        if ($search) {
+            $tanahQuery->where(function ($query) use ($search) {
+                $query->where('nop', 'like', "%{$search}%")
+                    ->orWhere('nop_raw', 'like', "%{$search}%")
+                    ->orWhere('nama_wajib_ipeda', 'like', "%{$search}%")
+                    ->orWhere('nomor_persil', 'like', "%{$search}%")
+                    ->orWhere('jenis_tanah', 'like', "%{$search}%")
+                    ->orWhereHas('blok', function ($q) use ($search) {
+                        $q->where('nama_blok', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $tanah = $tanahQuery
+            ->orderBy('nama_wajib_ipeda', 'asc')
+            ->paginate(5)
+            ->withQueryString();
+
+        $initialNopRaw = $request->query('nop');
+        $normalizedNop = NopNormalizer::normalize($initialNopRaw);
+        $source = (string) $request->query('source', '');
+        $prefill = null;
+
+        if ($source === 'sismiop' && $normalizedNop) {
+            $sismiop = SismiopData::query()->where('nop', $normalizedNop)->first();
+            $parsed = NopNormalizer::parse($normalizedNop);
+
+            if ($sismiop) {
+                $prefill = [
+                    'source' => 'sismiop',
+                    'nop' => $normalizedNop,
+                    'nop_raw' => $sismiop->nop_raw ?? $initialNopRaw,
+                    'nama_wajib_ipeda' => $sismiop->subjek_pajak_nama_wajib_pajak,
+                    'tempat_tinggal' => $sismiop->subjek_pajak_jalan_dusun,
+                    'luas_ha' => $sismiop->bumi,
+                    'blok' => $parsed['blok'] ?? null,
+                ];
+            }
+        }
+
+        $blokList = MapBlok::orderBy('nama_blok')->get(['id', 'nama_blok']);
+
+        return Inertia::render('Tanah/Index', [
+            'tanah' => $tanah,
+            'filters' => [
+                'search' => $search,
+            ],
+            'blokList' => $blokList,
+            'blokCount' => $blokList->count(),
+            'openCreateModal' => true,
+            'initialCreateNop' => $normalizedNop,
+            'createPrefill' => $prefill,
         ]);
     }
 
@@ -54,6 +121,7 @@ class TanahController extends Controller
     {
         try {
             $validated = $request->validate($this->manualRules());
+            $validated = $this->normalizeNopPayload($validated);
 
             Tanah::create($validated);
 
@@ -68,6 +136,7 @@ class TanahController extends Controller
     {
         try {
             $validated = $request->validate($this->manualRules($tanah->id, (int) $request->input('blok_id')));
+            $validated = $this->normalizeNopPayload($validated);
 
             $tanah->update($validated);
 
@@ -271,6 +340,20 @@ class TanahController extends Controller
 
         return [
             'no_urut' => 'nullable|string|max:10',
+            'nop' => [
+                'nullable',
+                'string',
+                'max:64',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || trim((string) $value) === '') {
+                        return;
+                    }
+
+                    if (NopNormalizer::normalize((string) $value) === null) {
+                        $fail('NOP harus mengandung angka yang valid.');
+                    }
+                },
+            ],
             'nama_wajib_ipeda' => 'required|string|max:255',
             'tempat_tinggal' => 'nullable|string|max:255',
             'nomor_persil' => [
@@ -295,6 +378,7 @@ class TanahController extends Controller
     {
         return [
             'no_urut' => 'nullable|string|max:10',
+            'nop' => 'nullable|string|max:64',
             'nama_wajib_ipeda' => 'required|string|max:255',
             'tempat_tinggal' => 'nullable|string|max:255',
             'nomor_persil' => 'required|string|max:50',
@@ -314,6 +398,9 @@ class TanahController extends Controller
     {
         return [
             'no_urut' => $rowData['no_urut'] ?? null,
+            ...$this->normalizeNopPayload([
+                'nop' => $rowData['nop'] ?? null,
+            ]),
             'nama_wajib_ipeda' => $rowData['nama_wajib_ipeda'],
             'tempat_tinggal' => $rowData['tempat_tinggal'] ?? null,
             'nomor_persil' => $rowData['nomor_persil'],
@@ -332,5 +419,16 @@ class TanahController extends Controller
     private function previewCacheKey(string $previewId): string
     {
         return "tanah-import-{$previewId}";
+    }
+
+    private function normalizeNopPayload(array $payload): array
+    {
+        $raw = $payload['nop'] ?? null;
+        $normalized = NopNormalizer::normalize($raw);
+
+        $payload['nop'] = $normalized;
+        $payload['nop_raw'] = $raw !== null && trim((string) $raw) !== '' ? trim((string) $raw) : null;
+
+        return $payload;
     }
 }

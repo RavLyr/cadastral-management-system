@@ -24,9 +24,11 @@ class SismiopController extends Controller
 
         $existingData = $query->paginate(10)->withQueryString();
         $importedData = session('imported_data', []);
+        $importReport = session('sismiop_import_report');
         return Inertia::render('Sismiop/Index', [
             'existingData' => $existingData,
             'importedData' => $importedData,
+            'importReport' => $importReport,
         ]);
     }
 
@@ -41,8 +43,23 @@ class SismiopController extends Controller
             Excel::import($import, $request->file('file'));
 
             session(['imported_data' => $import->data]);
+            session(['sismiop_import_report' => $import->report]);
 
-            return redirect()->route('sismiop.index')->with('success', 'Data SISMIOP berhasil dipreview.');
+            $report = $import->report;
+            $reportMessage = sprintf(
+                'Total: %d, Berhasil: %d, NOP kosong: %d, NOP panjang tidak ideal: %d, Match GIS: %d, Tidak match GIS: %d, Sudah ada Tanah: %d, Belum ada Tanah: %d, Duplikat: %d',
+                $report['total_row'] ?? 0,
+                $report['berhasil'] ?? 0,
+                $report['nop_kosong'] ?? 0,
+                $report['nop_tidak_valid_panjang'] ?? 0,
+                $report['match_gis'] ?? 0,
+                $report['tidak_match_gis'] ?? 0,
+                $report['sudah_ada_tanah'] ?? 0,
+                $report['belum_ada_tanah'] ?? 0,
+                $report['duplikat_nop'] ?? 0,
+            );
+
+            return redirect()->route('sismiop.index')->with('success', 'Data SISMIOP berhasil dipreview. ' . $reportMessage);
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Gagal import: ' . $e->getMessage()]);
         }
@@ -104,6 +121,7 @@ class SismiopController extends Controller
             }
 
             session()->forget('imported_data');
+            session()->forget('sismiop_import_report');
 
             $message = "Data SISMIOP berhasil disimpan. {$insertedCount} data baru ditambahkan";
             if ($skippedCount > 0) {
@@ -123,6 +141,7 @@ class SismiopController extends Controller
     {
         SismiopData::truncate();
         session()->forget('imported_data');
+        session()->forget('sismiop_import_report');
         return redirect()->route('sismiop.index')->with('success', 'Data import berhasil dihapus.');
     }
 

@@ -10,6 +10,7 @@ class SismiopData extends Model
 
     protected $fillable = [
         'nop',
+        'nop_raw',
         'objek_pajak_jalan_dusun_op',
         'objek_pajak_rt',
         'objek_pajak_rw',

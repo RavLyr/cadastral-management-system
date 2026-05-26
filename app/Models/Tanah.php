@@ -10,6 +10,8 @@ class Tanah extends Model
     protected $table = 'tanah';
     protected $fillable = [
         'no_urut',
+        'nop',
+        'nop_raw',
         'nama_wajib_ipeda',
         'tempat_tinggal',
         'nomor_persil',
