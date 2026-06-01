@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\GisApiController;
+use App\Http\Controllers\Api\SismiopApiController;
+use App\Http\Controllers\Api\TanahApiController;
 use App\Http\Controllers\DevPostgisController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PencarianController;
@@ -27,7 +30,16 @@ Route::middleware('auth')->group(function () {
 
     // Template routes
     Route::get('/templates/{template}', [TemplateController::class, 'download'])->name('template.download');
+    Route::prefix('api')->group(function () {
+        Route::get('/gis/bidang', [GisApiController::class, 'bidang']);
+        Route::get('/gis/bidang/{nop}', [GisApiController::class, 'showBidang']);
+        Route::get('/gis/nop-status', [GisApiController::class, 'nopStatus']);
 
+        Route::get('/tanah/by-nop/{nop}', [TanahApiController::class, 'byNop']);
+        Route::get('/tanah/nop-list', [TanahApiController::class, 'nopList']);
+
+        Route::get('/sismiop/by-nop/{nop}', [SismiopApiController::class, 'byNop']);
+    });
     Route::prefix('tanah')->group(function () {
         Route::get('/import', [TanahController::class, 'importForm'])->name('tanah.import.form');
         Route::post('/import/preview', [TanahController::class, 'importPreview'])->name('tanah.import.preview');
