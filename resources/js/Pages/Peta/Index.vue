@@ -63,7 +63,6 @@ const submitUpload = () => {
         onError: (errors) => {
             uploading.value = false;
             uploadProgress.value = 0;
-            console.log(errors);
             if(typeof errors == 'object') {
                 for (const key in errors) {
                     if (errors.hasOwnProperty(key)) {

@@ -62,7 +62,6 @@ const editingItem = ref(null);
 const showDeleteModal = ref(false);
 const deletingItem = ref(null);
 const errorMessage = ref('');
-// console.log(props.tanah.total);
 
 
 // Form for creating new data

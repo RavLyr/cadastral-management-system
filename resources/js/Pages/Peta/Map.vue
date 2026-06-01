@@ -19,6 +19,7 @@
 <script>
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { toast } from 'vue-sonner';
 
 export default {
   props: {
@@ -164,7 +165,7 @@ export default {
           this.map.fitBounds(bounds.pad(0.08));
         }
       } catch (e) {
-        console.error(e);
+        toast.error('Gagal memuat polygon bidang tanah.');
       }
     },
     findLayerByNop(nop) {

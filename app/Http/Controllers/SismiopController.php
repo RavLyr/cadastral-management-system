@@ -139,6 +139,8 @@ class SismiopController extends Controller
 
     public function clear()
     {
+        abort_unless(app()->environment('local'), 403);
+
         SismiopData::truncate();
         session()->forget('imported_data');
         session()->forget('sismiop_import_report');

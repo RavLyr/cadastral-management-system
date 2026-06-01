@@ -11,20 +11,11 @@ const props = defineProps({
 const form = useForm({ username: '', password: '', remember: false });
 const submit = () => {
     form.post('/login', {
-        onSuccess: (props) => {
+        onSuccess: () => {
             toast.success('Login berhasil');
         },
-        onError: (errors) => {
-            console.log(form.errors);
-
-            if (errors && typeof errors === 'object') {
-                Object.entries(errors).forEach(([field, msgs]) => {
-                   console.log(typeof(msgs));
-
-                });
-            } else {
-                toast.error('Gagal login. Periksa input Anda.');
-            }
+        onError: () => {
+            toast.error('Gagal login. Periksa input Anda.');
         },
         onFinish: () => form.reset('password'),
     });
