@@ -296,7 +296,7 @@ const detailRows = computed(() => {
                             Hapus Semua Data
                         </DangerButton>
                         <a class="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
-                            href="/templates/Template%20DHR%20DESA%20TEMUREJO.xlsx" download>
+                            :href="route('template.download', 'sismiop')" download>
                             <Sheet size="20" />
                             Download Template Excel
                         </a>
