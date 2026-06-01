@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-3">
     <div class="flex flex-col md:flex-row gap-2">
+      <button @click="goBack" class="px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">
+        Kembali
+      </button>
       <input v-model="search" placeholder="Cari NOP" @keyup.enter="doSearch" class="w-full border rounded px-3 py-2" />
       <button @click="doSearch" class="px-4 py-2 rounded bg-amber-600 text-white">Cari</button>
       <select v-model="basemapId" @change="setBasemap(basemapId)" class="w-full md:w-56 border rounded px-3 py-2">
@@ -9,11 +12,14 @@
         </option>
       </select>
     </div>
-    <div id="map" style="height:600px;border:1px solid #ccc"></div>
+    <div id="map" class="h-[600px] border border-gray-300 bg-gray-100"></div>
   </div>
 </template>
 
 <script>
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
 export default {
   props: {
     initialNop: { type: String, default: null }
@@ -45,6 +51,12 @@ export default {
           label: 'Esri Satellite',
           url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           attribution: 'Tiles &copy; Esri'
+        },
+        {
+          id: 'none',
+          label: 'No Basemap (Offline)',
+          url: null,
+          attribution: ''
         }
       ],
       tanahStyle: {
@@ -74,35 +86,13 @@ export default {
     };
   },
   mounted() {
-    this.loadLeaflet().then(async () => {
-      this.initMap();
-      await this.loadNopStatuses();
-      await this.loadAllPolygons();
-      if (this.search) {
-        this.doSearch();
-      }
-    }).catch((err) => {
-      console.error('Leaflet load error', err);
-    });
+    this.initMap();
+    this.loadNopStatuses().then(() => this.loadAllPolygons());
+    if (this.search) {
+      this.doSearch();
+    }
   },
   methods: {
-    loadLeaflet() {
-      return new Promise((resolve, reject) => {
-        if (window.L) {
-          resolve();
-          return;
-        }
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Leaflet failed to load'));
-        document.body.appendChild(script);
-      });
-    },
     initMap() {
       this.map = L.map('map').setView([-7.1002, 110.7002], 15);
       this.setBasemap(this.basemapId);
@@ -113,6 +103,11 @@ export default {
 
       if (this.baseLayer) {
         this.map.removeLayer(this.baseLayer);
+        this.baseLayer = null;
+      }
+
+      if (!selected.url) {
+        return;
       }
 
       this.baseLayer = L.tileLayer(selected.url, {
@@ -301,6 +296,15 @@ export default {
       const admin = await this.fetchAdminData(nop);
       const sismiop = admin ? null : await this.fetchSismiopData(nop);
       layer.bindPopup(this.buildPopupHtml(nop, admin, sismiop)).openPopup();
+    }
+    ,
+    goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+
+      window.location.href = '/pencarian';
     }
   }
 }

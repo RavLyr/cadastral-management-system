@@ -4,6 +4,8 @@ import { Head, router } from '@inertiajs/vue3';
 import { onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { FileSearch, MapPinned, Printer } from 'lucide-vue-next';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import SearchBar from '@/Components/SearchBar.vue';
 import Table from '@/Components/Table.vue';
 import Pagination from '@/Components/Pagination.vue';
@@ -92,6 +94,12 @@ const basemaps = [
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attribution: 'Tiles &copy; Esri',
     },
+    {
+        id: 'none',
+        label: 'No Basemap (Offline)',
+        url: null,
+        attribution: '',
+    },
 ];
 
 watch(search, (value) => {
@@ -108,33 +116,13 @@ watch(search, (value) => {
 });
 
 onMounted(async () => {
-    await loadLeaflet();
     initMap();
     await loadNopStatuses();
     await loadAllBidang();
 });
 
-const loadLeaflet = async () => {
-    if (window.L) {
-        return;
-    }
-
-    await new Promise((resolve, reject) => {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Leaflet gagal dimuat'));
-        document.body.appendChild(script);
-    });
-};
-
 const initMap = () => {
-    map.value = window.L.map('pencarian-map').setView([-7.1002, 110.7002], 14);
+    map.value = L.map('pencarian-map').setView([-7.1002, 110.7002], 14);
     setBasemap(basemapId.value);
     mapReady.value = true;
 };
@@ -145,9 +133,14 @@ const setBasemap = (id) => {
 
     if (baseLayer.value) {
         map.value.removeLayer(baseLayer.value);
+        baseLayer.value = null;
     }
 
-    baseLayer.value = window.L.tileLayer(selected.url, {
+    if (!selected.url) {
+        return;
+    }
+
+    baseLayer.value = L.tileLayer(selected.url, {
         attribution: selected.attribution,
         maxZoom: 20,
     });
@@ -211,7 +204,7 @@ const loadAllBidang = async () => {
             map.value.removeLayer(allBidangLayer.value);
         }
 
-        allBidangLayer.value = window.L.geoJSON(data, {
+        allBidangLayer.value = L.geoJSON(data, {
             style: (feature) => getBaseStyle(feature?.properties?.nop),
             onEachFeature: (feature, layer) => {
                 const nop = feature?.properties?.nop;
@@ -560,7 +553,7 @@ const formatLuasForDisplay = () => {
                             </option>
                         </select>
                     </div>
-                    <div id="pencarian-map" class="h-[420px] rounded-lg border border-gray-200"></div>
+                    <div id="pencarian-map" class="h-[420px] rounded-lg border border-gray-200 bg-gray-100"></div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm p-4">

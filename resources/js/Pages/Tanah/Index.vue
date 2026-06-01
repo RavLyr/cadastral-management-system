@@ -40,6 +40,18 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    openEditModal: {
+        type: Boolean,
+        default: false,
+    },
+    editTanahId: {
+        type: [Number, String],
+        default: null,
+    },
+    editTanahData: {
+        type: Object,
+        default: null,
+    },
 });
 
 const search = ref(props.filters?.search || '');
@@ -132,21 +144,7 @@ const closeDeleteModal = () => {
 };
 
 const openEditModal = (item) => {
-    editingItem.value = item;
-    editForm.no_urut = item.no_urut;
-    editForm.nop = item.nop;
-    editForm.nama_wajib_ipeda = item.nama_wajib_ipeda;
-    editForm.tempat_tinggal = item.tempat_tinggal;
-    editForm.nomor_persil = item.nomor_persil;
-    editForm.blok_id = item.blok_id;
-    editForm.jenis_tanah = item.jenis_tanah;
-    editForm.luas_ha = item.luas_ha;
-    editForm.luas_da = item.luas_da;
-    editForm.ipeda_r = item.ipeda_r;
-    editForm.ipeda_s = item.ipeda_s;
-    editForm.sebab_perubahan = item.sebab_perubahan;
-    editForm.tgl_perubahan = item.tgl_perubahan;
-    showEditModal.value = true;
+    applyEditPrefill(item);
 };
 
 const closeEditModal = () => {
@@ -285,6 +283,10 @@ onMounted(() => {
         applyCreatePrefill();
         showModal.value = true;
     }
+
+    if (props.openEditModal && props.editTanahData) {
+        applyEditPrefill(props.editTanahData);
+    }
 });
 
 const applyCreatePrefill = () => {
@@ -296,6 +298,41 @@ const applyCreatePrefill = () => {
     form.nama_wajib_ipeda = props.createPrefill.nama_wajib_ipeda || form.nama_wajib_ipeda;
     form.tempat_tinggal = props.createPrefill.tempat_tinggal || form.tempat_tinggal;
     form.luas_ha = props.createPrefill.luas_ha || form.luas_ha;
+};
+
+const normalizeDateInput = (value) => {
+    if (!value) {
+        return '';
+    }
+
+    const text = String(value);
+    if (text.includes('T')) {
+        return text.split('T')[0];
+    }
+
+    return text;
+};
+
+const applyEditPrefill = (item) => {
+    if (!item) {
+        return;
+    }
+
+    editingItem.value = item;
+    editForm.no_urut = item.no_urut || '';
+    editForm.nop = item.nop_raw || item.nop || '';
+    editForm.nama_wajib_ipeda = item.nama_wajib_ipeda || '';
+    editForm.tempat_tinggal = item.tempat_tinggal || '';
+    editForm.nomor_persil = item.nomor_persil || '';
+    editForm.blok_id = item.blok_id || '';
+    editForm.jenis_tanah = item.jenis_tanah || '';
+    editForm.luas_ha = item.luas_ha || '';
+    editForm.luas_da = item.luas_da || '';
+    editForm.ipeda_r = item.ipeda_r || '';
+    editForm.ipeda_s = item.ipeda_s || '';
+    editForm.sebab_perubahan = item.sebab_perubahan || '';
+    editForm.tgl_perubahan = normalizeDateInput(item.tgl_perubahan);
+    showEditModal.value = true;
 };
 </script>
 

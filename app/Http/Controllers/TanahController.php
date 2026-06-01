@@ -54,6 +54,9 @@ class TanahController extends Controller
             'openCreateModal' => false,
             'initialCreateNop' => null,
             'createPrefill' => null,
+            'openEditModal' => false,
+            'editTanahId' => null,
+            'editTanahData' => null,
         ]);
     }
 
@@ -114,6 +117,68 @@ class TanahController extends Controller
             'openCreateModal' => true,
             'initialCreateNop' => $normalizedNop,
             'createPrefill' => $prefill,
+            'openEditModal' => false,
+            'editTanahId' => null,
+            'editTanahData' => null,
+        ]);
+    }
+
+    public function edit(Request $request, Tanah $tanah)
+    {
+        $search = $request->input('search');
+        $tanahQuery = Tanah::with(['blok:id,nama_blok']);
+
+        if ($search) {
+            $tanahQuery->where(function ($query) use ($search) {
+                $query->where('nop', 'like', "%{$search}%")
+                    ->orWhere('nop_raw', 'like', "%{$search}%")
+                    ->orWhere('nama_wajib_ipeda', 'like', "%{$search}%")
+                    ->orWhere('nomor_persil', 'like', "%{$search}%")
+                    ->orWhere('jenis_tanah', 'like', "%{$search}%")
+                    ->orWhereHas('blok', function ($q) use ($search) {
+                        $q->where('nama_blok', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $list = $tanahQuery
+            ->orderBy('nama_wajib_ipeda', 'asc')
+            ->paginate(5)
+            ->withQueryString();
+
+        $blokList = MapBlok::orderBy('nama_blok')->get(['id', 'nama_blok']);
+
+        $editTanahData = [
+            'id' => $tanah->id,
+            'no_urut' => $tanah->no_urut,
+            'nop' => $tanah->nop,
+            'nop_raw' => $tanah->nop_raw,
+            'nama_wajib_ipeda' => $tanah->nama_wajib_ipeda,
+            'tempat_tinggal' => $tanah->tempat_tinggal,
+            'nomor_persil' => $tanah->nomor_persil,
+            'blok_id' => $tanah->blok_id,
+            'jenis_tanah' => $tanah->jenis_tanah,
+            'luas_ha' => $tanah->luas_ha,
+            'luas_da' => $tanah->luas_da,
+            'ipeda_r' => $tanah->ipeda_r,
+            'ipeda_s' => $tanah->ipeda_s,
+            'sebab_perubahan' => $tanah->sebab_perubahan,
+            'tgl_perubahan' => $tanah->tgl_perubahan?->format('Y-m-d'),
+        ];
+
+        return Inertia::render('Tanah/Index', [
+            'tanah' => $list,
+            'filters' => [
+                'search' => $search,
+            ],
+            'blokList' => $blokList,
+            'blokCount' => $blokList->count(),
+            'openCreateModal' => false,
+            'initialCreateNop' => null,
+            'createPrefill' => null,
+            'openEditModal' => true,
+            'editTanahId' => $tanah->id,
+            'editTanahData' => $editTanahData,
         ]);
     }
 
