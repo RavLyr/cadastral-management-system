@@ -60,6 +60,6 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__ . '/auth.php';
 
-if (app()->environment('local')) {
-    Route::get('/dev/postgis-test', [DevPostgisController::class, 'show']);
-}
+// if (app()->environment('local')) {
+//     Route::get('/dev/postgis-test', [DevPostgisController::class, 'show']);
+// }
