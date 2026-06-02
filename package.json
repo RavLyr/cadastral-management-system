@@ -20,6 +20,7 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
+        "leaflet": "^1.9.4",
         "lucide-vue-next": "^0.553.0",
         "vue-sonner": "^2.0.9",
         "vue3-select": "^0.1.2"

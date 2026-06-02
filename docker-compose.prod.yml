@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -12,17 +10,18 @@ services:
     env_file:
       - .env.prod
     depends_on:
-      - db
+      - postgis
 
-  db:
-    image: mysql:8
-    container_name: mysql_prod
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: postgis_prod
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: buku_c_temurejo_prod
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE:-buku_c_temurejo_prod}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - db_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  db_data:
+  postgres_data:

@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\GisApiController;
+use App\Http\Controllers\Api\SismiopApiController;
+use App\Http\Controllers\Api\TanahApiController;
+use App\Http\Controllers\DevPostgisController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PencarianController;
 use App\Http\Controllers\PetaController;
 use App\Http\Controllers\TanahController;
@@ -7,27 +12,14 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SismiopController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\TemplateController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    if (Route::has('login')) {
-        return redirect()->route('login');
-    }
-
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [HomeController::class, 'welcome']);
 
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [HomeController::class, 'dashboard'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::prefix('profile')->group(function () {
@@ -38,7 +30,16 @@ Route::middleware('auth')->group(function () {
 
     // Template routes
     Route::get('/templates/{template}', [TemplateController::class, 'download'])->name('template.download');
+    Route::prefix('api')->group(function () {
+        Route::get('/gis/bidang', [GisApiController::class, 'bidang']);
+        Route::get('/gis/bidang/{nop}', [GisApiController::class, 'showBidang']);
+        Route::get('/gis/nop-status', [GisApiController::class, 'nopStatus']);
 
+        Route::get('/tanah/by-nop/{nop}', [TanahApiController::class, 'byNop']);
+        Route::get('/tanah/nop-list', [TanahApiController::class, 'nopList']);
+
+        Route::get('/sismiop/by-nop/{nop}', [SismiopApiController::class, 'byNop']);
+    });
     Route::prefix('tanah')->group(function () {
         Route::get('/import', [TanahController::class, 'importForm'])->name('tanah.import.form');
         Route::post('/import/preview', [TanahController::class, 'importPreview'])->name('tanah.import.preview');
@@ -48,6 +49,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('peta')->group(function () {
         Route::get('/', [PetaController::class, 'index'])->name('peta.index');
+        Route::get('/map', [PetaController::class, 'map'])->name('peta.map');
         Route::post('/', [PetaController::class, 'store'])->name('peta.store');
         Route::delete('/{id}', [PetaController::class, 'destroy'])->name('peta.destroy');
     });
@@ -58,7 +60,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [SismiopController::class, 'index'])->name('sismiop.index');
         Route::post('/', [SismiopController::class, 'import'])->name('sismiop.import');
         Route::post('/commit', [SismiopController::class, 'commit'])->name('sismiop.commit');
-        Route::delete('/clear', [SismiopController::class, 'clear'])->name('sismiop.clear');
+        if (app()->environment('local')) {
+            Route::delete('/clear', [SismiopController::class, 'clear'])->name('sismiop.clear');
+        }
         Route::delete('/{id}', [SismiopController::class, 'destroy'])->name('sismiop.destroy');
         Route::put('/{id}', [SismiopController::class, 'update'])->name('sismiop.update');
         Route::get('/{id}/edit', [SismiopController::class, 'edit'])->name('sismiop.edit');
@@ -67,3 +71,7 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+
+// if (app()->environment('local')) {
+//     Route::get('/dev/postgis-test', [DevPostgisController::class, 'show']);
+// }

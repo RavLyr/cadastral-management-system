@@ -1,9 +1,9 @@
 # --- STAGE 1: PHP DEPENDENCIES BUILDER ---
 FROM php:8.3-fpm-alpine AS php-builder
 
-RUN apk add --no-cache git unzip libzip-dev curl oniguruma-dev libpng-dev libjpeg-turbo-dev freetype-dev && \
+RUN apk add --no-cache git unzip libzip-dev curl oniguruma-dev libpng-dev libjpeg-turbo-dev freetype-dev postgresql-dev && \
     docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install pdo_mysql mbstring bcmath gd zip
+    docker-php-ext-install pdo_mysql pdo_pgsql mbstring bcmath gd zip
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -36,16 +36,18 @@ RUN pnpm build
 FROM php:8.3-fpm-alpine AS php-runtime
 
 RUN apk add --no-cache \
-        nginx \
-        curl \
-        libzip-dev \
-        libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev
+    nginx \
+    curl \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    postgresql-dev
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         pdo_mysql \
+        pdo_pgsql \
         zip \
         gd
 
