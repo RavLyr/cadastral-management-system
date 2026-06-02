@@ -15,11 +15,13 @@ class PencarianController extends Controller
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nama_wajib_ipeda', 'like', "%{$search}%")
-                  ->orWhere('nomor_persil', 'like', "%{$search}%")
-                  ->orWhereHas('blok', function ($q2) use ($search) {
-                      $q2->where('nama_blok', 'like', "%{$search}%");
-                  });
+                $q->where('nop', 'like', "%{$search}%")
+                    ->orWhere('nop_raw', 'like', "%{$search}%")
+                    ->orWhere('nama_wajib_ipeda', 'like', "%{$search}%")
+                    ->orWhere('nomor_persil', 'like', "%{$search}%")
+                    ->orWhereHas('blok', function ($q2) use ($search) {
+                        $q2->where('nama_blok', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -28,9 +30,12 @@ class PencarianController extends Controller
             ->through(function ($item) {
                 return [
                     'id' => $item->id,
+                    'nop' => $item->nop,
+                    'nop_raw' => $item->nop_raw,
                     'nama_wajib_ipeda' => $item->nama_wajib_ipeda,
                     'nomor_persil' => $item->nomor_persil,
                     'blok' => $item->blok?->nama_blok,
+                    'map_link' => $item->nop ? route('peta.map', ['nop' => $item->nop]) : null,
                     'luas_m2' => $item->luas_ha ? $item->luas_ha * 10000 : null,
                     'skala' => $item->blok?->skala,
                     'peta_url' => $item->blok?->file_pdf ? asset('storage/' . $item->blok->file_pdf) : null,

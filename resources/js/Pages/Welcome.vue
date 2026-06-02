@@ -1,13 +1,9 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head } from '@inertiajs/vue3';
 import LoginForm from '@/Components/LoginForm.vue';
 
 const onSubmit = (payload) => {
-    // UI-only behavior for the welcome page: log submitted credentials
-    // Replace with a real authentication flow if you want this page to login
-    // eslint-disable-next-line no-console
-    console.log('login submit (welcome)', payload);
+    return payload;
 };
 </script>
 

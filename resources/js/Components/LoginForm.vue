@@ -42,11 +42,11 @@ const onSubmit = (e) => {
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                         <Mail :size="18" class="text-slate-400" />
                     </span>
-                    <TextInput v-model="username" type="username" placeholder="Enter your username" required autofocus
+                    <TextInput v-model="username" type="text" placeholder="Enter your username" required autofocus
                         class="block w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400" />
 
                 </div>
-                <InputError  :message="errors.email" />
+                <InputError :message="errors.username" />
             </div>
 
             <div>
