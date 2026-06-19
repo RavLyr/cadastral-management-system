@@ -8,7 +8,7 @@ import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 import InputError from '@/Components/InputError.vue';
 import { toast } from 'vue-sonner';
-import { PlusIcon, Search, Sheet, SquarePen, Trash2, UploadCloudIcon } from 'lucide-vue-next';
+import {  PlusIcon, Search, Sheet, SquarePen, Trash2, UploadCloudIcon } from 'lucide-vue-next';
 import SearchBar from '@/Components/SearchBar.vue';
 
 const props = defineProps({
@@ -63,6 +63,12 @@ const showDeleteModal = ref(false);
 const deletingItem = ref(null);
 const errorMessage = ref('');
 
+const hasImportantRelations = (item) => {
+    return (item?.histories?.length || 0) > 0 || (item?.children?.length || 0) > 0;
+};
+
+const isEditLuasLocked = computed(() => hasImportantRelations(editingItem.value));
+const lockedLuasMessage = 'Data ini sudah memiliki riwayat atau hasil pembagian. Luas hanya dapat diubah melalui Catat Perubahan.';
 
 // Form for creating new data
 const form = useForm({
@@ -135,6 +141,9 @@ const closeModal = () => {
 
 const openDeleteModal = (item) => {
     deletingItem.value = item;
+    errorMessage.value = hasImportantRelations(item)
+        ? 'Data ini memiliki riwayat atau data hasil pembagian, sehingga tidak bisa dihapus langsung.'
+        : '';
     showDeleteModal.value = true;
 };
 const closeDeleteModal = () => {
@@ -160,7 +169,38 @@ const goToImport = () => {
     router.visit('/tanah/import');
 };
 
+const numberOrNull = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const number = Number(value);
+    return Number.isNaN(number) ? null : number;
+};
+
+const setPositiveError = (key, value, label) => {
+    const number = numberOrNull(value);
+    errors.value[key] = number !== null && number <= 0 ? `${label} harus lebih besar dari 0.` : '';
+    return !errors.value[key];
+};
+
+const validatePositiveFields = (targetForm, prefix = '') => {
+    const fields = [
+        ['luas_ha', 'Luas HA'],
+        ['luas_da', 'Luas DA'],
+        ['ipeda_r', 'IPEDA R'],
+        ['ipeda_s', 'IPEDA S'],
+    ];
+
+    return fields.every(([field, label]) => setPositiveError(`${prefix}${field}`, targetForm[field], label));
+};
+
 const submitForm = () => {
+    if (!validatePositiveFields(form)) {
+        toast.error('Nilai luas/IPEDA harus lebih besar dari 0.');
+        return;
+    }
+
     form.post('/tanah', {
         onSuccess: (page) => {
 
@@ -176,6 +216,22 @@ const submitForm = () => {
 };
 
 const updateForm = () => {
+    if (!validatePositiveFields(editForm, 'edit_')) {
+        toast.error('Nilai luas/IPEDA harus lebih besar dari 0.');
+        return;
+    }
+
+    if (isEditLuasLocked.value) {
+        const original = editingItem.value || {};
+        const luasChanged = String(editForm.luas_ha || '') !== String(original.luas_ha || '')
+            || String(editForm.luas_da || '') !== String(original.luas_da || '');
+
+        if (luasChanged) {
+            toast.error(lockedLuasMessage);
+            return;
+        }
+    }
+
     editForm.put(`/tanah/${editingItem.value.id}`, {
         onSuccess: (page) => {
 
@@ -192,6 +248,12 @@ const updateForm = () => {
 
 const deleteItem = (id) => {
     errorMessage.value = '';
+    if (hasImportantRelations(deletingItem.value)) {
+        errorMessage.value = 'Data ini memiliki riwayat atau data hasil pembagian, sehingga tidak bisa dihapus langsung.';
+        toast.error(errorMessage.value);
+        return;
+    }
+
     router.delete(`/tanah/${id}`, {
         onSuccess: (page) => {
 
@@ -209,70 +271,30 @@ const errors = ref({});
 
 // Ubah watcher untuk menampilkan error jika <= 0
 watch(() => form.luas_ha, (newVal) => {
-    if (newVal < 0) {
-        errors.value.luas_ha = 'Nilai harus lebih besar dari 0';
-        form.luas_ha = '';
-    } else {
-        errors.value.luas_ha = '';
-    }
+    setPositiveError('luas_ha', newVal, 'Luas HA');
 });
 watch(() => form.luas_da, (newVal) => {
-    if (newVal < 0) {
-        errors.value.luas_da = 'Nilai harus lebih besar dari 0';
-        form.luas_da = '';
-    } else {
-        errors.value.luas_da = '';
-    }
+    setPositiveError('luas_da', newVal, 'Luas DA');
 });
 watch(() => form.ipeda_r, (newVal) => {
-    if (newVal < 0) {
-        errors.value.ipeda_r = 'Nilai harus lebih besar dari 0';
-        form.ipeda_r = '';
-    } else {
-        errors.value.ipeda_r = '';
-    }
+    setPositiveError('ipeda_r', newVal, 'IPEDA R');
 });
 watch(() => form.ipeda_s, (newVal) => {
-    if (newVal < 0) {
-        errors.value.ipeda_s = 'Nilai harus lebih besar dari 0';
-        form.ipeda_s = '';
-    } else {
-        errors.value.ipeda_s = '';
-    }
+    setPositiveError('ipeda_s', newVal, 'IPEDA S');
 });
 
 // Sama untuk editForm
 watch(() => editForm.luas_ha, (newVal) => {
-    if (newVal < 0) {
-        errors.value.edit_luas_ha = 'Nilai harus lebih besar dari 0';
-        editForm.luas_ha = '';
-    } else {
-        errors.value.edit_luas_ha = '';
-    }
+    setPositiveError('edit_luas_ha', newVal, 'Luas HA');
 });
 watch(() => editForm.luas_da, (newVal) => {
-    if (newVal < 0) {
-        errors.value.edit_luas_da = 'Nilai harus lebih besar dari 0';
-        editForm.luas_da = '';
-    } else {
-        errors.value.edit_luas_da = '';
-    }
+    setPositiveError('edit_luas_da', newVal, 'Luas DA');
 });
 watch(() => editForm.ipeda_r, (newVal) => {
-    if (newVal < 0) {
-        errors.value.edit_ipeda_r = 'Nilai harus lebih besar dari 0';
-        editForm.ipeda_r = '';
-    } else {
-        errors.value.edit_ipeda_r = '';
-    }
+    setPositiveError('edit_ipeda_r', newVal, 'IPEDA R');
 });
 watch(() => editForm.ipeda_s, (newVal) => {
-    if (newVal < 0) {
-        errors.value.edit_ipeda_s = 'Nilai harus lebih besar dari 0';
-        editForm.ipeda_s = '';
-    } else {
-        errors.value.edit_ipeda_s = '';
-    }
+    setPositiveError('edit_ipeda_s', newVal, 'IPEDA S');
 });
 
 onMounted(() => {
@@ -507,12 +529,15 @@ const applyEditPrefill = (item) => {
                     ]" required />
                     <div>
 
-                        <FormInput v-model="editForm.luas_ha" label="Luas HA" type="number" />
+                        <FormInput v-model="editForm.luas_ha" label="Luas HA" type="number" :disabled="isEditLuasLocked" />
                         <InputError :message="errors.edit_luas_ha" />
                     </div>
                     <div>
-                        <FormInput v-model="editForm.luas_da" label="Luas DA" type="number" />
+                        <FormInput v-model="editForm.luas_da" label="Luas DA" type="number" :disabled="isEditLuasLocked" />
                         <InputError :message="errors.edit_luas_da" />
+                    </div>
+                    <div v-if="isEditLuasLocked" class="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        {{ lockedLuasMessage }}
                     </div>
                     <div>
                         <FormInput v-model="editForm.ipeda_r" label="IPEDA R" type="number" />

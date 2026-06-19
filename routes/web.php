@@ -8,6 +8,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PencarianController;
 use App\Http\Controllers\PetaController;
 use App\Http\Controllers\TanahController;
+use App\Http\Controllers\TanahHistoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SismiopController;
 use App\Http\Controllers\PrintController;
@@ -35,7 +36,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/gis/bidang/{nop}', [GisApiController::class, 'showBidang']);
         Route::get('/gis/nop-status', [GisApiController::class, 'nopStatus']);
 
+        Route::get('/tanah/by-nop/{nop}/records', [TanahApiController::class, 'recordsByNop']);
         Route::get('/tanah/by-nop/{nop}', [TanahApiController::class, 'byNop']);
+        Route::get('/tanah/{tanah}/detail', [TanahApiController::class, 'detail']);
         Route::get('/tanah/nop-list', [TanahApiController::class, 'nopList']);
 
         Route::get('/sismiop/by-nop/{nop}', [SismiopApiController::class, 'byNop']);
@@ -44,6 +47,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/import', [TanahController::class, 'importForm'])->name('tanah.import.form');
         Route::post('/import/preview', [TanahController::class, 'importPreview'])->name('tanah.import.preview');
         Route::post('/import/execute', [TanahController::class, 'importExecute'])->name('tanah.import.execute');
+        Route::post('/{tanah}/histories', [TanahHistoryController::class, 'store'])->name('tanah.histories.store');
     });
     Route::resource('tanah', TanahController::class);
 
