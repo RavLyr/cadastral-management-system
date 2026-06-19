@@ -10,7 +10,7 @@ class PrintController extends Controller
 {
     public function generate($id)
     {
-        $tanah = Tanah::with('blok')->findOrFail($id);
+        $tanah = Tanah::with(['blok'])->findOrFail($id);
         $pdf = new Fpdi('P', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->SetCreator('Buku C Digital');
         $pdf->SetAuthor('System');
@@ -64,6 +64,59 @@ class PrintController extends Controller
             $pdf->Cell(60, 8, $row[0], 1, 0, 'L', $fill);
             $pdf->Cell(0, 8, $row[1], 1, 1, 'L', $fill);
         }
+    }
+
+    private function addHistorySection(Fpdi $pdf, $tanah)
+    {
+        $pdf->Ln(8);
+        $pdf->SetFont('helvetica', 'B', 13);
+        $pdf->Cell(0, 8, 'RIWAYAT PERUBAHAN', 0, 1, 'L');
+
+        if ($tanah->histories->isEmpty()) {
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(0, 7, 'Belum ada riwayat perubahan.', 1, 1, 'L');
+            return;
+        }
+
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell(24, 7, 'Tanggal', 1, 0, 'L', true);
+        $pdf->Cell(32, 7, 'Jenis', 1, 0, 'L', true);
+        $pdf->Cell(28, 7, 'Luas Awal', 1, 0, 'L', true);
+        $pdf->Cell(28, 7, 'Luas Berubah', 1, 0, 'L', true);
+        $pdf->Cell(24, 7, 'Luas Sisa', 1, 0, 'L', true);
+        $pdf->Cell(28, 7, 'Pemilik Baru', 1, 0, 'L', true);
+        $pdf->Cell(16, 7, 'Ket.', 1, 1, 'L', true);
+
+        $pdf->SetFont('helvetica', '', 8);
+        foreach ($tanah->histories->take(8) as $history) {
+            $pdf->Cell(24, 7, $history->tanggal_perubahan?->format('d/m/Y') ?? '-', 1);
+            $pdf->Cell(32, 7, mb_strimwidth($history->jenis_perubahan, 0, 18, '...'), 1);
+            $pdf->Cell(28, 7, $this->formatLuasPair($history->luas_awal, $history->luas_awal_da), 1);
+            $pdf->Cell(28, 7, $this->formatLuasPair($history->luas_berubah, $history->luas_berubah_da), 1);
+            $pdf->Cell(24, 7, $this->formatLuasPair($history->luas_sisa, $history->luas_sisa_da), 1);
+            $pdf->Cell(28, 7, mb_strimwidth($history->pemilik_baru ?? '-', 0, 16, '...'), 1);
+            $pdf->Cell(16, 7, mb_strimwidth($history->keterangan ?? '-', 0, 8, '...'), 1, 1);
+        }
+
+        if ($tanah->histories->count() > 8) {
+            $pdf->Cell(0, 6, 'Riwayat lainnya tersedia di aplikasi.', 0, 1, 'L');
+        }
+    }
+
+    private function formatLuasPair($ha, $da): string
+    {
+        $parts = [];
+
+        if ($ha !== null && $ha !== '') {
+            $parts[] = $ha . ' HA';
+        }
+
+        if ($da !== null && $da !== '') {
+            $parts[] = $da . ' DA';
+        }
+
+        return $parts ? implode(' / ', $parts) : '-';
     }
     private function addHeader(Fpdi $pdf, $tanah)
     {

@@ -59,7 +59,7 @@ const maxWidthClass = {
     >
       <div
         v-show="show"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+        class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-50"
         @click.self="close"
       >
         <Transition
@@ -73,7 +73,7 @@ const maxWidthClass = {
           <div
             v-show="show"
             :class="['bg-white rounded-xl shadow-xl w-full', maxWidthClass[maxWidth]]"
-            class="max-h-[90vh] overflow-hidden flex flex-col"
+            class="relative z-[10000] max-h-[90vh] overflow-hidden flex flex-col"
           >
             <!-- Modal Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">

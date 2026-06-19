@@ -60,6 +60,7 @@ const inputValue = computed({
 
         <!-- Text, Number, Date Inputs -->
         <input v-if="type !== 'textarea' && type !== 'select'" v-model="inputValue" :type="type"
+            :step="type === 'number' ? 'any' : undefined"
             :placeholder="placeholder" :required="required" :disabled="disabled" :class="[
                 'block w-full px-4 py-3 border rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors',
                 error ? 'border-red-300' : 'border-slate-200',
@@ -78,6 +79,7 @@ const inputValue = computed({
         <!-- Select -->
         <Vue3Select  v-else-if="type === 'select'" v-model="inputValue" :options="options"
             :reduce="option => option.value" :clearable="false" :searchable="false" :placeholder="placeholder || 'Pilih...'"
+            :disabled="disabled"
             class="block w-full py-2 border rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors" />
 
 

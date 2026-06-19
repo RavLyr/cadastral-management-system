@@ -23,7 +23,7 @@ class TanahController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $tanahQuery = Tanah::with(['blok:id,nama_blok']);
+        $tanahQuery = Tanah::with(['blok:id,nama_blok', 'histories', 'children.blok:id,nama_blok']);
 
         if ($search) {
             $tanahQuery->where(function ($query) use ($search) {
@@ -64,7 +64,7 @@ class TanahController extends Controller
     public function create(Request $request)
     {
         $search = $request->input('search');
-        $tanahQuery = Tanah::with(['blok:id,nama_blok']);
+        $tanahQuery = Tanah::with(['blok:id,nama_blok', 'histories', 'children.blok:id,nama_blok']);
 
         if ($search) {
             $tanahQuery->where(function ($query) use ($search) {
@@ -127,7 +127,7 @@ class TanahController extends Controller
     public function edit(Request $request, Tanah $tanah)
     {
         $search = $request->input('search');
-        $tanahQuery = Tanah::with(['blok:id,nama_blok']);
+        $tanahQuery = Tanah::with(['blok:id,nama_blok', 'histories', 'children.blok:id,nama_blok']);
 
         if ($search) {
             $tanahQuery->where(function ($query) use ($search) {
@@ -151,6 +151,7 @@ class TanahController extends Controller
 
         $editTanahData = [
             'id' => $tanah->id,
+            'parent_id' => $tanah->parent_id,
             'no_urut' => $tanah->no_urut,
             'nop' => $tanah->nop,
             'nop_raw' => $tanah->nop_raw,
@@ -163,8 +164,41 @@ class TanahController extends Controller
             'luas_da' => $tanah->luas_da,
             'ipeda_r' => $tanah->ipeda_r,
             'ipeda_s' => $tanah->ipeda_s,
+            'luas_awal_ha' => $tanah->luas_awal_ha,
+            'luas_awal_da' => $tanah->luas_awal_da,
+            'luas_sisa_ha' => $tanah->luas_sisa_ha,
+            'luas_sisa_da' => $tanah->luas_sisa_da,
             'sebab_perubahan' => $tanah->sebab_perubahan,
             'tgl_perubahan' => $tanah->tgl_perubahan?->format('Y-m-d'),
+            'histories' => $tanah->histories()->get()->map(fn ($history) => [
+                'id' => $history->id,
+                'jenis_perubahan' => $history->jenis_perubahan,
+                'tanggal_perubahan' => $history->tanggal_perubahan?->format('Y-m-d'),
+                'luas_awal' => $history->luas_awal,
+                'luas_awal_da' => $history->luas_awal_da,
+                'luas_berubah' => $history->luas_berubah,
+                'luas_berubah_da' => $history->luas_berubah_da,
+                'luas_sisa' => $history->luas_sisa,
+                'luas_sisa_da' => $history->luas_sisa_da,
+                'pemilik_lama' => $history->pemilik_lama,
+                'pemilik_baru' => $history->pemilik_baru,
+                'keterangan' => $history->keterangan,
+            ]),
+            'children' => $tanah->children()->with('blok:id,nama_blok')->get()->map(fn ($child) => [
+                'id' => $child->id,
+                'nama_wajib_ipeda' => $child->nama_wajib_ipeda,
+                'nop' => $child->nop,
+                'nop_raw' => $child->nop_raw,
+                'nomor_persil' => $child->nomor_persil,
+                'blok' => $child->blok?->nama_blok,
+                'luas_ha' => $child->luas_ha,
+                'luas_da' => $child->luas_da,
+                'luas_awal_ha' => $child->luas_awal_ha,
+                'luas_awal_da' => $child->luas_awal_da,
+                'luas_sisa_ha' => $child->luas_sisa_ha,
+                'luas_sisa_da' => $child->luas_sisa_da,
+                'tgl_perubahan' => $child->tgl_perubahan?->format('Y-m-d'),
+            ]),
         ];
 
         return Inertia::render('Tanah/Index', [
@@ -188,6 +222,7 @@ class TanahController extends Controller
         try {
             $validated = $request->validate($this->manualRules());
             $validated = $this->normalizeNopPayload($validated);
+            $validated = $this->withInitialLuasTracking($validated);
 
             Tanah::create($validated);
 
@@ -203,6 +238,7 @@ class TanahController extends Controller
         try {
             $validated = $request->validate($this->manualRules($tanah->id, (int) $request->input('blok_id')));
             $validated = $this->normalizeNopPayload($validated);
+            $validated = $this->withUpdatedLuasTracking($validated, $tanah);
 
             $tanah->update($validated);
 
@@ -217,10 +253,26 @@ class TanahController extends Controller
     {
         try {
             $tanah = Tanah::findOrFail($id);
+            $message = 'Data ini memiliki riwayat atau data hasil pembagian, sehingga tidak bisa dihapus langsung.';
+
+            if ($tanah->parent_id !== null || $tanah->histories()->exists() || $tanah->children()->exists()) {
+                if (request()->expectsJson()) {
+                    return response()->json(['message' => $message], 422);
+                }
+
+                return redirect()->back()->withErrors([
+                    'error' => $message,
+                ]);
+            }
+
             $tanah->delete();
             return Redirect::route('tanah.index')
                 ->with('success', 'Data Tanah berhasil dihapus.');
         } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()], 500);
+            }
+
             return redirect()->back()->withErrors(['error' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()]);
         }
 
@@ -411,6 +463,7 @@ class TanahController extends Controller
 
         return [
             'no_urut' => 'nullable|string|max:10',
+            'parent_id' => 'nullable|exists:tanah,id',
             'nop' => [
                 'nullable',
                 'string',
@@ -434,10 +487,14 @@ class TanahController extends Controller
                 $uniqueRule,
             ],
             'kelas_desa' => 'nullable|string|max:50',
-            'luas_ha' => 'nullable|numeric|min:0',
-            'luas_da' => 'nullable|numeric|min:0',
-            'ipeda_r' => 'nullable|numeric|min:0',
-            'ipeda_s' => 'nullable|numeric|min:0',
+            'luas_ha' => 'nullable|numeric|gt:0',
+            'luas_da' => 'nullable|numeric|gt:0',
+            'luas_awal_ha' => 'nullable|numeric|gt:0',
+            'luas_awal_da' => 'nullable|numeric|gt:0',
+            'luas_sisa_ha' => 'nullable|numeric|gt:0',
+            'luas_sisa_da' => 'nullable|numeric|gt:0',
+            'ipeda_r' => 'nullable|numeric|gt:0',
+            'ipeda_s' => 'nullable|numeric|gt:0',
             'jenis_tanah' => 'required|in:basah,kering',
             'sebab_perubahan' => 'nullable|string',
             'tgl_perubahan' => 'nullable|date',
@@ -454,10 +511,14 @@ class TanahController extends Controller
             'tempat_tinggal' => 'nullable|string|max:255',
             'nomor_persil' => 'required|string|max:50',
             'kelas_desa' => 'nullable|string|max:50',
-            'luas_ha' => 'nullable|numeric|min:0',
-            'luas_da' => 'nullable|numeric|min:0',
-            'ipeda_r' => 'nullable|numeric|min:0',
-            'ipeda_s' => 'nullable|numeric|min:0',
+            'luas_ha' => 'nullable|numeric|gt:0',
+            'luas_da' => 'nullable|numeric|gt:0',
+            'luas_awal_ha' => 'nullable|numeric|gt:0',
+            'luas_awal_da' => 'nullable|numeric|gt:0',
+            'luas_sisa_ha' => 'nullable|numeric|gt:0',
+            'luas_sisa_da' => 'nullable|numeric|gt:0',
+            'ipeda_r' => 'nullable|numeric|gt:0',
+            'ipeda_s' => 'nullable|numeric|gt:0',
             'jenis_tanah' => 'required|in:basah,kering',
             'sebab_perubahan' => 'nullable|string',
             'tgl_perubahan' => 'nullable|date',
@@ -478,6 +539,10 @@ class TanahController extends Controller
             'kelas_desa' => $rowData['kelas_desa'] ?? null,
             'luas_ha' => $rowData['luas_ha'] ?? null,
             'luas_da' => $rowData['luas_da'] ?? null,
+            'luas_awal_ha' => $rowData['luas_ha'] ?? null,
+            'luas_awal_da' => $rowData['luas_da'] ?? null,
+            'luas_sisa_ha' => $rowData['luas_ha'] ?? null,
+            'luas_sisa_da' => $rowData['luas_da'] ?? null,
             'ipeda_r' => $rowData['ipeda_r'] ?? null,
             'ipeda_s' => $rowData['ipeda_s'] ?? null,
             'jenis_tanah' => strtolower($rowData['jenis_tanah']),
@@ -499,6 +564,40 @@ class TanahController extends Controller
 
         $payload['nop'] = $normalized;
         $payload['nop_raw'] = $raw !== null && trim((string) $raw) !== '' ? trim((string) $raw) : null;
+
+        return $payload;
+    }
+
+    private function withInitialLuasTracking(array $payload): array
+    {
+        $payload['luas_awal_ha'] = $payload['luas_awal_ha'] ?? $payload['luas_ha'] ?? null;
+        $payload['luas_awal_da'] = $payload['luas_awal_da'] ?? $payload['luas_da'] ?? null;
+        $payload['luas_sisa_ha'] = $payload['luas_sisa_ha'] ?? $payload['luas_ha'] ?? null;
+        $payload['luas_sisa_da'] = $payload['luas_sisa_da'] ?? $payload['luas_da'] ?? null;
+
+        return $payload;
+    }
+
+    private function withUpdatedLuasTracking(array $payload, Tanah $tanah): array
+    {
+        $hasLuasChange = (array_key_exists('luas_ha', $payload) && (string) $payload['luas_ha'] !== (string) $tanah->luas_ha)
+            || (array_key_exists('luas_da', $payload) && (string) $payload['luas_da'] !== (string) $tanah->luas_da);
+
+        if ($hasLuasChange && ($tanah->histories()->exists() || $tanah->children()->exists())) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'luas_ha' => 'Data ini sudah memiliki riwayat atau hasil pembagian. Luas hanya dapat diubah melalui Catat Perubahan.',
+            ]);
+        }
+
+        if (array_key_exists('luas_ha', $payload)) {
+            $payload['luas_sisa_ha'] = $payload['luas_ha'];
+            $payload['luas_awal_ha'] = $payload['luas_ha'];
+        }
+
+        if (array_key_exists('luas_da', $payload)) {
+            $payload['luas_sisa_da'] = $payload['luas_da'];
+            $payload['luas_awal_da'] = $payload['luas_da'];
+        }
 
         return $payload;
     }
