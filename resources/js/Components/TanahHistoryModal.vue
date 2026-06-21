@@ -92,6 +92,30 @@ const displayValue = (value) => {
 
 const isPartialSale = computed(() => form.jenis_perubahan.trim().toLowerCase() === 'dijual sebagian');
 const isOwnerChange = computed(() => form.jenis_perubahan.trim().toLowerCase() === 'ganti pemilik');
+const isCorrection = computed(() => form.jenis_perubahan.trim().toLowerCase() === 'koreksi data');
+const isInheritance = computed(() => form.jenis_perubahan.trim().toLowerCase() === 'waris');
+const isGrant = computed(() => form.jenis_perubahan.trim().toLowerCase() === 'hibah');
+
+const showOwnerFields = computed(() => {
+    return isPartialSale.value || isOwnerChange.value || isInheritance.value || isGrant.value;
+});
+
+const pemilikLamaLabel = computed(() => {
+    if (isGrant.value) {
+        return 'Pemberi';
+    }
+    return 'Pemilik Lama';
+});
+
+const pemilikBaruLabel = computed(() => {
+    if (isInheritance.value) {
+        return 'Ahli Waris / Pemilik Baru';
+    }
+    if (isGrant.value) {
+        return 'Penerima';
+    }
+    return 'Pemilik Baru';
+});
 
 const basisHa = computed(() => numberOrNull(props.tanah?.luas_sisa_ha ?? props.tanah?.luas_ha));
 const basisDa = computed(() => numberOrNull(props.tanah?.luas_sisa_da ?? props.tanah?.luas_da));
@@ -135,6 +159,16 @@ watch(() => [form.jenis_perubahan, form.luas_berubah, form.luas_berubah_da], () 
 watch(() => [form.pemilik_baru, form.tanggal_perubahan], () => {
     if (isPartialSale.value) {
         syncChildFields();
+    }
+});
+
+watch(() => form.jenis_perubahan, (newValue) => {
+    Object.keys(errors).forEach((key) => delete errors[key]);
+    if (newValue.trim().toLowerCase() === 'koreksi data') {
+        form.pemilik_lama = '';
+        form.pemilik_baru = '';
+    } else {
+        form.pemilik_lama = props.tanah?.nama_wajib_ipeda || '';
     }
 });
 
@@ -183,8 +217,33 @@ const validateFrontend = () => {
         return false;
     }
 
-    if ((isPartialSale.value || isOwnerChange.value) && !form.pemilik_baru.trim()) {
+    if (!form.tanggal_perubahan) {
+        setError('tanggal_perubahan', 'Tanggal perubahan wajib diisi.');
+        return false;
+    }
+
+    if (isPartialSale.value && !form.pemilik_baru.trim()) {
         setError('pemilik_baru', 'Pemilik baru wajib diisi.');
+        return false;
+    }
+
+    if (isOwnerChange.value && !form.pemilik_baru.trim()) {
+        setError('pemilik_baru', 'Pemilik baru wajib diisi.');
+        return false;
+    }
+
+    if (isInheritance.value && !form.pemilik_baru.trim()) {
+        setError('pemilik_baru', 'Ahli waris/pemilik baru wajib diisi.');
+        return false;
+    }
+
+    if (isGrant.value && !form.pemilik_baru.trim()) {
+        setError('pemilik_baru', 'Penerima wajib diisi.');
+        return false;
+    }
+
+    if (isGrant.value && !form.pemilik_lama.trim()) {
+        setError('pemilik_lama', 'Pemberi wajib diisi.');
         return false;
     }
 
@@ -231,7 +290,9 @@ const prepareConfirmation = () => {
         return;
     }
 
-    syncChildFields();
+    if (isPartialSale.value) {
+        syncChildFields();
+    }
 
     if (!validateFrontend()) {
         toast.error('Periksa kembali isian perubahan tanah.');
@@ -252,7 +313,39 @@ const submit = async () => {
     Object.keys(errors).forEach((key) => delete errors[key]);
 
     try {
-        const response = await window.axios.post(`/tanah/${props.tanah.id}/histories`, { ...form }, {
+        const payload = {
+            jenis_perubahan: form.jenis_perubahan,
+            tanggal_perubahan: form.tanggal_perubahan,
+            keterangan: form.keterangan,
+        };
+
+        if (isPartialSale.value) {
+            payload.luas_awal = form.luas_awal;
+            payload.luas_awal_da = form.luas_awal_da;
+            payload.luas_berubah = form.luas_berubah;
+            payload.luas_berubah_da = form.luas_berubah_da;
+            payload.luas_sisa = form.luas_sisa;
+            payload.luas_sisa_da = form.luas_sisa_da;
+            payload.pemilik_lama = form.pemilik_lama;
+            payload.pemilik_baru = form.pemilik_baru;
+
+            payload.child_nop = form.child_nop;
+            payload.child_nama_wajib_ipeda = form.child_nama_wajib_ipeda;
+            payload.child_tempat_tinggal = form.child_tempat_tinggal;
+            payload.child_jenis_tanah = form.child_jenis_tanah;
+            payload.child_nomor_persil = form.child_nomor_persil;
+            payload.child_luas_ha = form.child_luas_ha;
+            payload.child_luas_da = form.child_luas_da;
+            payload.child_ipeda_r = form.child_ipeda_r;
+            payload.child_ipeda_s = form.child_ipeda_s;
+            payload.child_sebab_perubahan = form.child_sebab_perubahan;
+            payload.child_tgl_perubahan = form.child_tgl_perubahan;
+        } else if (isOwnerChange.value || isInheritance.value || isGrant.value) {
+            payload.pemilik_lama = form.pemilik_lama;
+            payload.pemilik_baru = form.pemilik_baru;
+        }
+
+        const response = await window.axios.post(`/tanah/${props.tanah.id}/histories`, payload, {
             headers: {
                 Accept: 'application/json',
             },
@@ -295,17 +388,26 @@ const submit = async () => {
                         required
                         :error="errors.tanggal_perubahan?.[0]"
                     />
+                    
+                    <!-- Helper Text -->
+                    <div class="md:col-span-2 text-xs text-blue-700 bg-blue-50/80 p-3 rounded-lg border border-blue-100 leading-relaxed">
+                        Gunakan Dijual Sebagian jika terjadi pembagian bidang tanah. Jenis perubahan lainnya hanya mencatat perubahan administratif.
+                    </div>
+
                     <FormInput
+                        v-if="showOwnerFields"
                         v-model="form.pemilik_lama"
-                        label="Pemilik Lama"
+                        :label="pemilikLamaLabel"
                         type="text"
+                        :required="isGrant"
                         :error="errors.pemilik_lama?.[0]"
                     />
                     <FormInput
+                        v-if="showOwnerFields"
                         v-model="form.pemilik_baru"
-                        label="Pemilik Baru"
+                        :label="pemilikBaruLabel"
                         type="text"
-                        :required="isPartialSale || isOwnerChange"
+                        :required="isPartialSale || isOwnerChange || isInheritance || isGrant"
                         :error="errors.pemilik_baru?.[0]"
                     />
                     <FormInput
@@ -318,7 +420,7 @@ const submit = async () => {
                 </div>
             </section>
 
-            <section class="space-y-4 rounded-lg border border-gray-200 p-4">
+            <section v-if="isPartialSale" class="space-y-4 rounded-lg border border-gray-200 p-4">
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900">Informasi Luas</h4>
                     <p class="mt-1 text-xs text-gray-500">Basis pembagian memakai luas sisa saat ini, bukan luas awal bidang.</p>
@@ -395,15 +497,18 @@ const submit = async () => {
                 <h4 class="text-sm font-semibold text-gray-900">Konfirmasi Perubahan</h4>
                 <dl class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div><dt class="text-gray-500">Jenis Perubahan</dt><dd class="font-medium text-gray-900">{{ displayValue(form.jenis_perubahan) }}</dd></div>
-                    <div><dt class="text-gray-500">Pemilik Data Awal</dt><dd class="font-medium text-gray-900">{{ displayValue(form.pemilik_lama || tanah?.nama_wajib_ipeda) }}</dd></div>
-                    <div><dt class="text-gray-500">Luas Aktif Saat Ini (HA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_awal) }}</dd></div>
-                    <div><dt class="text-gray-500">Luas Aktif Saat Ini (DA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_awal_da) }}</dd></div>
-                    <div><dt class="text-gray-500">Luas Dijual/Berubah (HA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_berubah) }}</dd></div>
-                    <div><dt class="text-gray-500">Luas Dijual/Berubah (DA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_berubah_da) }}</dd></div>
-                    <div><dt class="text-gray-500">Luas Sisa Setelah Perubahan (HA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_sisa) }}</dd></div>
-                    <div><dt class="text-gray-500">Luas Sisa Setelah Perubahan (DA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_sisa_da) }}</dd></div>
-                    <div><dt class="text-gray-500">Pemilik Baru</dt><dd class="font-medium text-gray-900">{{ displayValue(form.pemilik_baru) }}</dd></div>
+                    <div v-if="showOwnerFields"><dt class="text-gray-500">{{ pemilikLamaLabel }}</dt><dd class="font-medium text-gray-900">{{ displayValue(form.pemilik_lama || tanah?.nama_wajib_ipeda) }}</dd></div>
+                    <div v-if="showOwnerFields"><dt class="text-gray-500">{{ pemilikBaruLabel }}</dt><dd class="font-medium text-gray-900">{{ displayValue(form.pemilik_baru) }}</dd></div>
+                    <template v-if="isPartialSale">
+                        <div><dt class="text-gray-500">Luas Aktif Saat Ini (HA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_awal) }}</dd></div>
+                        <div><dt class="text-gray-500">Luas Aktif Saat Ini (DA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_awal_da) }}</dd></div>
+                        <div><dt class="text-gray-500">Luas Dijual/Berubah (HA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_berubah) }}</dd></div>
+                        <div><dt class="text-gray-500">Luas Dijual/Berubah (DA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_berubah_da) }}</dd></div>
+                        <div><dt class="text-gray-500">Luas Sisa Setelah Perubahan (HA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_sisa) }}</dd></div>
+                        <div><dt class="text-gray-500">Luas Sisa Setelah Perubahan (DA)</dt><dd class="font-medium text-gray-900">{{ displayValue(form.luas_sisa_da) }}</dd></div>
+                    </template>
                     <div><dt class="text-gray-500">Tanggal Perubahan</dt><dd class="font-medium text-gray-900">{{ displayValue(form.tanggal_perubahan) }}</dd></div>
+                    <div class="md:col-span-2"><dt class="text-gray-500">Keterangan</dt><dd class="font-medium text-gray-900">{{ displayValue(form.keterangan) }}</dd></div>
                 </dl>
             </section>
 
