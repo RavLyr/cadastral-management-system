@@ -30,6 +30,7 @@ class Tanah extends Model
         'tgl_perubahan',
         'jenis_tanah',
         'blok_id',
+        'created_by',
     ];
 
     protected $casts = [

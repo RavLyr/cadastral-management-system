@@ -223,6 +223,7 @@ class TanahController extends Controller
             $validated = $request->validate($this->manualRules());
             $validated = $this->normalizeNopPayload($validated);
             $validated = $this->withInitialLuasTracking($validated);
+            $validated["created_by"] = Auth::id();
 
             Tanah::create($validated);
 
