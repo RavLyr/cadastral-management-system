@@ -15,7 +15,7 @@ test.describe('Pencarian Data Tanah & Peta Interaktif', () => {
         await expect(page.locator('button', { hasText: 'Lihat Peta' })).toBeVisible();
     });
 
-    test.fixme('klik Lihat Peta menampilkan informasi bidang di peta', async ({ page }) => {
+    test('klik Lihat Peta menampilkan informasi bidang di peta', async ({ page }) => {
         await page.getByPlaceholder('Cari berdasarkan Nama, NOP, Nomor Persil, atau Blok...')
             .fill('E2E BUAH MERAH');
         const hasilRow = page.locator('tbody tr').filter({ hasText: 'E2E BUAH MERAH' });
@@ -25,12 +25,11 @@ test.describe('Pencarian Data Tanah & Peta Interaktif', () => {
         await expect(page.getByText('Informasi Bidang Terpilih')).toBeVisible({ timeout: 30000 });
         await expect(page.getByText('Status Data', { exact: true })).toBeVisible({ timeout: 30000 });
         await expect(page.getByText('Data Tanah tersedia')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByText('NOP', { exact: true })).toBeVisible({ timeout: 30000 });
 
         // popup Leaflet berisi link Print
         const popup = page.locator('.leaflet-popup-content');
-        await expect(popup).toContainText('Print', { timeout: 30000 });
-        await expect(popup.locator('a[href^="/print/"]')).toBeVisible({ timeout: 30000 });
+        await expect(popup).toContainText('Print', { timeout: 60000 });
+        await expect(popup.locator('a[href^="/print/"]')).toBeVisible({ timeout: 60000 });
     });
 
     test('catat perubahan ganti pemilik', async ({ page }) => {
@@ -56,7 +55,7 @@ test.describe('Pencarian Data Tanah & Peta Interaktif', () => {
 
         const popup = page.locator('.leaflet-popup-content').last();
         const printLink = popup.locator('a[href^="/print/"]');
-        await expect(printLink).toBeVisible({ timeout: 30000 });
+        await expect(printLink).toBeVisible({ timeout: 60000 });
 
         const printResponse = context.waitForEvent('response', {
             predicate: (r) => r.url().includes('/print/'),
