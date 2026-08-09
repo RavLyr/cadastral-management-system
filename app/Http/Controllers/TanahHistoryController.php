@@ -43,6 +43,25 @@ class TanahHistoryController extends Controller
 
         $isPartialSale = $this->isPartialSale($validated['jenis_perubahan']);
         $isOwnerChange = $this->isOwnerChange($validated['jenis_perubahan']);
+        $isWaris = mb_strtolower(trim($validated['jenis_perubahan'])) === 'waris';
+        $isHibah = mb_strtolower(trim($validated['jenis_perubahan'])) === 'hibah';
+        $isKoreksi = mb_strtolower(trim($validated['jenis_perubahan'])) === 'koreksi data';
+
+        // Sanitasi data berdasarkan jenis perubahan
+        if (!$isPartialSale) {
+            $validated['luas_awal'] = null;
+            $validated['luas_awal_da'] = null;
+            $validated['luas_berubah'] = null;
+            $validated['luas_berubah_da'] = null;
+            $validated['luas_sisa'] = null;
+            $validated['luas_sisa_da'] = null;
+        }
+
+        if ($isKoreksi) {
+            $validated['pemilik_lama'] = null;
+            $validated['pemilik_baru'] = null;
+        }
+
         $childPayload = $this->extractChildPayload($validated);
 
         unset($validated['create_child']);
@@ -73,6 +92,8 @@ class TanahHistoryController extends Controller
             $validated['luas_awal_da'] = $basisDa;
             $validated['luas_sisa'] = $newSisaHa;
             $validated['luas_sisa_da'] = $newSisaDa;
+
+            $this->validateChildPersil($tanah, $childPayload);
         }
 
         if ($isOwnerChange && trim((string) ($validated['pemilik_baru'] ?? '')) === '') {
@@ -81,7 +102,24 @@ class TanahHistoryController extends Controller
             ]);
         }
 
-        $this->validateChildPersil($tanah, $childPayload);
+        if ($isWaris && trim((string) ($validated['pemilik_baru'] ?? '')) === '') {
+            throw ValidationException::withMessages([
+                'pemilik_baru' => 'Ahli waris/pemilik baru wajib diisi.',
+            ]);
+        }
+
+        if ($isHibah) {
+            if (trim((string) ($validated['pemilik_lama'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    'pemilik_lama' => 'Pemberi wajib diisi.',
+                ]);
+            }
+            if (trim((string) ($validated['pemilik_baru'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    'pemilik_baru' => 'Penerima wajib diisi.',
+                ]);
+            }
+        }
 
         $result = DB::transaction(function () use ($tanah, $validated, $isPartialSale, $isOwnerChange, $childPayload, $newSisaHa, $newSisaDa, $changedHa, $changedDa) {
             $history = $tanah->histories()->create([
