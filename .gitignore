@@ -9,6 +9,8 @@
 .env
 /.pnpm-store/*
 .env.*
+graphify-out/*
+.opencode/*
 !.env.example
 .env.backup
 /scripts/*
