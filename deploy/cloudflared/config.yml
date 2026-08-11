@@ -1,8 +1,9 @@
-# Cloudflared Tunnel — Buku C Digital
+# Cloudflared Tunnel — Buku C Digital (tunnel: buku-c)
+# ID: aabf1aa4-3391-4cc6-b9bd-709891031c58
 # Jalankan `cloudflared` di mesin yang menjalankan stack produksi (port 8080).
 # Config ini identik untuk lokal (testing) dan VPS -> migrasi = pindahkan folder ini.
 
-tunnel: buku-c
+tunnel: aabf1aa4-3391-4cc6-b9bd-709891031c58
 credentials-file: /etc/cloudflared/buku-c.json
 
 ingress:

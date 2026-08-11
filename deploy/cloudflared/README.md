@@ -16,7 +16,7 @@ cloudflared --version
 
 ```bash
 cloudflared tunnel login                      # buka link, pilih domain ravlyr.my.id
-cloudflared tunnel create buku-c              # simpan buku-c.json -> keluar credential
+cloudflared tunnel create buku-c              # sudah dibuat: ID aabf1aa4-3391-4cc6-b9bd-709891031c58
 cloudflared tunnel route dns buku-c app.ravlyr.my.id
 ```
 
@@ -24,7 +24,7 @@ Copy `buku-c.json` (dan `config.yml`) ke `/etc/cloudflared/`:
 
 ```bash
 sudo mkdir -p /etc/cloudflared
-sudo cp ~/.cloudflared/buku-c.json /etc/cloudflared/
+sudo cp ~/.cloudflared/aabf1aa4-3391-4cc6-b9bd-709891031c58.json /etc/cloudflared/buku-c.json
 sudo cp deploy/cloudflared/config.yml /etc/cloudflared/
 ```
 
