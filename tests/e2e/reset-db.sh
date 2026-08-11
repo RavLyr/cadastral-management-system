@@ -4,7 +4,7 @@
 set -euo pipefail
 
 APP=laravel_app_e2e
-PG=postgis_local
+PG=postgis_e2e
 
 echo "==> migrate:fresh"
 docker exec "$APP" php artisan migrate:fresh --force

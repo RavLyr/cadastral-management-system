@@ -3,7 +3,7 @@ services:
     build:
       context: .
       target: php-runtime
-    container_name: laravel_app
+    container_name: laravel_app_prod
     restart: unless-stopped
     ports:
       - "8080:80"
@@ -11,10 +11,12 @@ services:
       - .env.prod
     depends_on:
       - postgis
+    volumes:
+      - app_storage:/var/www/storage
 
   postgis:
     image: postgis/postgis:16-3.4
-    container_name: postgis_prod
+    container_name: postgres_prod
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_DATABASE:-buku_c_temurejo_prod}
@@ -25,3 +27,6 @@ services:
 
 volumes:
   postgres_data:
+    name: postgres_prod_data
+  app_storage:
+    name: laravel_app_prod_storage

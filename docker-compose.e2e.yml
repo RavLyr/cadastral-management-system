@@ -1,0 +1,30 @@
+services:
+  app:
+    container_name: laravel_app_e2e
+    ports:
+      - "8081:80"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8081
+      APP_KEY: ${APP_KEY:-base64:0IY1OJZIkjNgp6hX6Zz/23DXEomGi5QktpdusKL2uv0=}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgis
+      DB_PORT: "5432"
+      DB_DATABASE: buku_c_e2e
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - postgis
+
+  postgis:
+    container_name: postgis_e2e
+    environment:
+      POSTGRES_DB: buku_c_e2e
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_e2e_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_e2e_data:
