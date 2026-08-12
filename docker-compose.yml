@@ -1,3 +1,5 @@
+name: buku-c-dev
+
 services:
   app:
     build:

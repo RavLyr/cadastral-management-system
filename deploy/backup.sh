@@ -8,10 +8,10 @@ OUT="backups/$STAMP"
 mkdir -p "$OUT"
 
 echo "==> Dump PostGIS (buku_c_temurejo_prod)"
-docker exec postgis_prod pg_dump -U postgres -d buku_c_temurejo_prod \
+docker exec postgres_prod pg_dump -U postgres -d buku_c_temurejo_prod \
     --format=custom --no-owner --file=/tmp/buku-c.dump
-docker cp "postgis_prod:/tmp/buku-c.dump" "$OUT/buku-c.dump"
-docker exec postgis_prod rm -f /tmp/buku-c.dump
+docker cp "postgres_prod:/tmp/buku-c.dump" "$OUT/buku-c.dump"
+docker exec postgres_prod rm -f /tmp/buku-c.dump
 
 echo "==> Backup storage (upload, PDF, dll)"
 docker run --rm \

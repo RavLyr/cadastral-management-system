@@ -29,3 +29,5 @@ yarn-error.log
 /.vscode
 /.zed
 deploy/cloudflared/*.json
+backups/
+test-results/

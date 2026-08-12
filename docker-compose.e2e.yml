@@ -1,6 +1,12 @@
+name: buku-c-e2e
+
 services:
   app:
+    build:
+      context: .
+      target: php-runtime
     container_name: laravel_app_e2e
+    restart: unless-stopped
     ports:
       - "8081:80"
     environment:
@@ -18,7 +24,9 @@ services:
       - postgis
 
   postgis:
+    image: postgis/postgis:16-3.4
     container_name: postgis_e2e
+    restart: unless-stopped
     environment:
       POSTGRES_DB: buku_c_e2e
       POSTGRES_USER: postgres

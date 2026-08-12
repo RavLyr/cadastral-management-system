@@ -32,6 +32,28 @@ test.describe('Pencarian Data Tanah & Peta Interaktif', () => {
         await expect(popup.locator('a[href^="/print/"]')).toBeVisible({ timeout: 60000 });
     });
 
+
+    test('link Print membuka halaman PDF di tab baru', async ({ page, context }) => {
+        await page.getByPlaceholder('Cari berdasarkan Nama, NOP, Nomor Persil, atau Blok...')
+            .fill('E2E BUAH MERAH');
+        const hasilRow = page.locator('tbody tr').filter({ hasText: 'E2E BUAH MERAH' });
+        await expect(hasilRow).toBeVisible({ timeout: 60000 });
+        await page.getByRole('button', { name: 'Lihat Peta' }).click();
+
+        await expect(page.getByText('Informasi Bidang Terpilih')).toBeVisible({ timeout: 30000 });
+        const printLink = page.locator('a[href^="/print/"]').first();
+        await expect(printLink).toBeVisible({ timeout: 60000 });
+
+        const printResponse = context.waitForEvent('response', {
+            predicate: (r) => r.url().includes('/print/'),
+            timeout: 15000,
+        });
+        await printLink.click();
+        const res = await printResponse;
+        expect(res.status()).toBe(200);
+        expect(res.headers()['content-type']).toContain('application/pdf');
+    });
+
     test('catat perubahan ganti pemilik', async ({ page }) => {
         await page.getByPlaceholder('Cari berdasarkan Nama, NOP, Nomor Persil, atau Blok...')
             .fill('E2E BUAH MERAH');
@@ -46,24 +68,5 @@ test.describe('Pencarian Data Tanah & Peta Interaktif', () => {
         await page.getByRole('button', { name: 'Simpan' }).click();
         await page.getByRole('button', { name: 'Ya, Simpan Perubahan' }).click();
         await expect(page.getByText('Riwayat perubahan tanah berhasil dicatat.')).toBeVisible();
-    });
-
-    test('link Print membuka halaman PDF di tab baru', async ({ page, context }) => {
-        await page.getByPlaceholder('Cari berdasarkan Nama, NOP, Nomor Persil, atau Blok...')
-            .fill('E2E BUAH MERAH');
-        await page.getByRole('button', { name: 'Lihat Peta' }).click();
-
-        const popup = page.locator('.leaflet-popup-content').last();
-        const printLink = popup.locator('a[href^="/print/"]');
-        await expect(printLink).toBeVisible({ timeout: 60000 });
-
-        const printResponse = context.waitForEvent('response', {
-            predicate: (r) => r.url().includes('/print/'),
-            timeout: 15000,
-        });
-        await printLink.click();
-        const res = await printResponse;
-        expect(res.status()).toBe(200);
-        expect(res.headers()['content-type']).toContain('application/pdf');
     });
 });
