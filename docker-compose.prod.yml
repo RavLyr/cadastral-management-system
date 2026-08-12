@@ -15,8 +15,6 @@ services:
       - app_storage:/var/www/storage/app
     depends_on:
       - postgis
-    volumes:
-      - app_storage:/var/www/storage
 
   postgis:
     image: postgis/postgis:16-3.4
@@ -31,7 +29,6 @@ services:
 
 volumes:
   app_storage:
+    name: laravel_app_prod_storage
   postgres_data:
     name: postgres_prod_data
-  app_storage:
-    name: laravel_app_prod_storage
