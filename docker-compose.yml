@@ -1,3 +1,5 @@
+name: buku-c-dev
+
 services:
   app:
     build:
@@ -8,7 +10,8 @@ services:
     ports:
       - "8080:80"
     env_file:
-      - .env.local
+      - path: .env.local
+        required: false
     depends_on:
       - db
       - postgis
@@ -19,7 +22,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: buku_c_temurejo
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
     volumes:
       - db_data:/var/lib/mysql
 
@@ -32,7 +35,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

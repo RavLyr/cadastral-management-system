@@ -360,7 +360,7 @@ const detailRows = computed(() => {
 
                                 <LucideEdit class="w-5 h-5" />
                             </button>
-                            <button @click="openDeleteModal(row)"
+                            <button @click="openDeleteModal(row.id)"
                                 class="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Hapus">
                                 <Trash2Icon class="w-5 h-5" />
                             </button>
